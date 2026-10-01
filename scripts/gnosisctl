@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+# Day-to-day control of the node. docs/05-operations.md
+#
+#   gnosisctl status              launchd state of every service
+#   gnosisctl health              sync, peers, head age, disk, clock (exit 1 if unhealthy)
+#   gnosisctl logs <service>      follow the service log
+#   gnosisctl start|stop|restart <service|all>
+#
+# Services: nethermind teku lighthouse validator listener
+# stop all = validator, listener, CL, EL (reverse dependency order, clean DB shutdown).
+
+source "$(dirname "$0")/lib.sh"
+load_config
+
+sudo_if_needed() { if [[ $EUID -eq 0 ]]; then "$@"; else sudo "$@"; fi; }
+
+installed_services() {
+  local s
+  for s in nethermind teku lighthouse validator listener; do
+    [[ -f "$LAUNCHD_DIR/$(label "$s").plist" ]] && echo "$s"
+  done
+  return 0
+}
+
+cmd_status() {
+  local s out state pid code
+  printf '%-12s %-10s %-8s %s\n' SERVICE STATE PID "LAST EXIT"
+  for s in $(installed_services); do
+    out="$(launchctl print "system/$(label "$s")" 2>/dev/null || true)"
+    if [[ -z "$out" ]]; then
+      printf '%-12s %-10s\n' "$s" "not loaded"
+      continue
+    fi
+    state="$(awk -F' = ' '/^\tstate = / {print $2; exit}' <<<"$out")"
+    pid="$(awk -F' = ' '/^\tpid = / {print $2; exit}' <<<"$out")"
+    code="$(awk -F' = ' '/^\tlast exit code = / {print $2; exit}' <<<"$out")"
+    printf '%-12s %-10s %-8s %s\n' "$s" "${state:-?}" "${pid:--}" "${code:--}"
+  done
+  [[ -n "$(installed_services)" ]] || info "no services installed (sudo scripts/30-services.sh install)"
+}
+
+rpc() {
+  curl -fsS -m 5 -H 'content-type: application/json' \
+    --data "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$1\",\"params\":${2:-[]}}" \
+    "http://127.0.0.1:$EL_HTTP_PORT" 2>/dev/null
+}
+beacon() { curl -fsS -m 5 "http://127.0.0.1:$CL_HTTP_PORT$1" 2>/dev/null; }
+jget() { /usr/bin/python3 -c "import json,sys; d=json.load(sys.stdin); print(eval(sys.argv[1]))" "$1" 2>/dev/null; }
+
+cmd_health() {
+  local bad=0 r
+  ok()  { printf '  %sok%s    %s\n' "$C_GRN" "$C_OFF" "$*"; }
+  nok() { printf '  %sFAIL%s  %s\n' "$C_RED" "$C_OFF" "$*"; bad=1; }
+  meh() { printf '  %swarn%s  %s\n' "$C_YEL" "$C_OFF" "$*"; }
+
+  log "Execution (Nethermind)"
+  if r="$(rpc eth_syncing)"; then
+    if [[ "$(jget 'd["result"]' <<<"$r")" == "False" ]]; then ok "not syncing (in sync)"
+    else meh "syncing: $(jget 'd["result"]' <<<"$r" | cut -c1-160)"; fi
+    local num ts age peers
+    num="$(rpc eth_blockNumber | jget 'int(d["result"],16)')"
+    ts="$(rpc eth_getBlockByNumber '["latest",false]' | jget 'int(d["result"]["timestamp"],16)')"
+    age=$(( $(date +%s) - ${ts:-0} ))
+    (( age < 30 )) && ok "head #$num, ${age}s old" || nok "head #$num is ${age}s old"
+    peers="$(rpc net_peerCount | jget 'int(d["result"],16)')"
+    (( ${peers:-0} >= 10 )) && ok "$peers peers" || meh "${peers:-0} peers"
+  else
+    nok "no answer on 127.0.0.1:$EL_HTTP_PORT"
+  fi
+
+  log "Consensus ($CL_CLIENT)"
+  if r="$(beacon /eth/v1/node/syncing)"; then
+    local dist opt elo
+    dist="$(jget 'd["data"]["sync_distance"]' <<<"$r")"
+    opt="$(jget 'd["data"].get("is_optimistic")' <<<"$r")"
+    elo="$(jget 'd["data"].get("el_offline")' <<<"$r")"
+    (( ${dist:-999} <= 2 )) && ok "sync distance $dist" || meh "sync distance $dist slots"
+    [[ "$opt" == "True" ]] && meh "optimistic (EL still syncing)"
+    [[ "$elo" == "True" ]] && nok "reports execution layer offline"
+    ok "$(beacon /eth/v1/node/peer_count | jget 'd["data"]["connected"]') peers, $(beacon /eth/v1/node/version | jget 'd["data"]["version"]')"
+  else
+    nok "no answer on 127.0.0.1:$CL_HTTP_PORT"
+  fi
+
+  if [[ "$VALIDATOR_ENABLED" == "true" ]]; then
+    log "Validator"
+    local vlog="$LOG_DIR/validator/validator.log"
+    if [[ -f "$vlog" ]]; then
+      local errs
+      errs="$(tail -n 500 "$vlog" | grep -cE '\| (ERROR|FATAL) ' || true)"
+      (( errs == 0 )) && ok "no errors in last 500 log lines" || nok "$errs ERROR/FATAL lines in last 500 (gnosisctl logs validator)"
+      tail -n 500 "$vlog" | grep -E 'Published (attestation|block)' | tail -1 | cut -c1-160 | sed 's/^/        /'
+    else
+      nok "no log at $vlog"
+    fi
+  fi
+
+  if [[ "$LISTENER_ENABLED" == "true" ]]; then
+    log "Listener"
+    local st="$GNOSIS_ROOT/state/listener-state.json" last head
+    if [[ -r "$st" ]]; then
+      last="$(jget 'd["lastBlock"]' < "$st")"
+      head="$(rpc eth_blockNumber | jget 'int(d["result"],16)')"
+      (( ${head:-0} - ${last:-0} <= 10 )) && ok "at block $last (head $head)" || nok "behind: $last vs head $head"
+    else
+      meh "no state file yet"
+    fi
+  fi
+
+  log "Host"
+  local free
+  free="$(df -g "$GNOSIS_ROOT" | awk 'NR==2 {print $4}')"
+  (( free >= 100 )) && ok "free disk ${free} GB" || nok "free disk ${free} GB"
+  local off
+  off="$(sntp -t 3 time.cloudflare.com 2>/dev/null | awk '/[+-][0-9.]+ \+\/-/ {print $1; exit}')"
+  [[ -n "$off" ]] && { awk -v a="${off#[-+]}" 'BEGIN {exit !(a < 0.1)}' && ok "clock offset ${off}s" || meh "clock offset ${off}s"; }
+  pmset -g batt | grep -q "AC Power" && ok "on AC power" || nok "ON BATTERY"
+
+  return $bad
+}
+
+cmd_logs() {
+  local s="${1:?usage: gnosisctl logs <service>}" f
+  case "$s" in
+    nethermind) f="$(ls -t "$LOG_DIR"/nethermind/*.txt 2>/dev/null | head -1)" ;;
+    teku)       f="$LOG_DIR/teku/teku.log" ;;
+    lighthouse) f="$(ls -t "$LOG_DIR"/lighthouse/*.log 2>/dev/null | head -1)" ;;
+    validator)  f="$LOG_DIR/validator/validator.log" ;;
+    listener)   f="$LOG_DIR/listener.log" ;;
+    *) die "unknown service: $s" ;;
+  esac
+  [[ -n "$f" && -f "$f" ]] || f="$LOG_DIR/$s.stderr.log"
+  info "tail -F $f   (startup errors: $LOG_DIR/$s.stderr.log)"
+  exec tail -n 100 -F "$f"
+}
+
+order_up=(nethermind teku lighthouse validator listener)
+order_down=(validator listener lighthouse teku nethermind)
+
+targets() {
+  # Expand "all" into installed services in the given order.
+  local want="$1"; shift
+  local s
+  for s in "$@"; do
+    [[ -f "$LAUNCHD_DIR/$(label "$s").plist" ]] || continue
+    [[ "$want" == "all" || "$want" == "$s" ]] && echo "$s"
+  done
+  return 0
+}
+
+cmd_start() {
+  local s
+  for s in $(targets "${1:?usage: gnosisctl start <service|all>}" "${order_up[@]}"); do
+    log "start $s"
+    sudo_if_needed launchctl bootstrap system "$LAUNCHD_DIR/$(label "$s").plist" 2>/dev/null || info "already loaded"
+  done
+}
+
+cmd_stop() {
+  local s
+  for s in $(targets "${1:?usage: gnosisctl stop <service|all>}" "${order_down[@]}"); do
+    log "stop $s (clean shutdown, can take a few minutes for nethermind)"
+    sudo_if_needed launchctl bootout "system/$(label "$s")" 2>/dev/null || info "not loaded"
+  done
+}
+
+cmd_restart() {
+  local s
+  for s in $(targets "${1:?usage: gnosisctl restart <service|all>}" "${order_down[@]}"); do
+    log "restart $s"
+    sudo_if_needed launchctl kickstart -k "system/$(label "$s")"
+  done
+}
+
+case "${1:-}" in
+  status)  cmd_status ;;
+  health)  cmd_health ;;
+  logs)    cmd_logs "${2:-}" ;;
+  start)   cmd_start "${2:-}" ;;
+  stop)    cmd_stop "${2:-}" ;;
+  restart) cmd_restart "${2:-}" ;;
+  *) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+esac

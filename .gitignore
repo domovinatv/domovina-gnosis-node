@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+._*
+
+# Local node config (copy of config/node.env.example)
+config/node.env
+
+# Never commit secrets or key material
+*.hex
+*.key
+keystore-*.json
+deposit_data-*.json
+validator_keys/
+secrets/
+.env
+.env.*
+listener.env
+!listener.env.example
+
+# Listener runtime files when run from the repo
+listener/listener-state.json
+listener/watchlist.json
+*.log
+
+# Downloads / builds
+*.tar.gz
+*.tgz
+*.zip
+node_modules/
