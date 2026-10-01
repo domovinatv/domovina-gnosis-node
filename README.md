@@ -99,6 +99,8 @@ docs/research/             sirovi istraživački nalazi s izvorima (2026-10-01)
 8. [Validator](docs/08-validator.md): ključevi, depozit, rad, izlaz
 9. [Sigurnost i model prijetnji](docs/09-security.md)
 
+Dnevnik rada: [2026-10-01 — prepisivanje, zamke, otvorene stavke za i9](docs/2026-10-01-prepisivanje-i-otvorene-stavke.md)
+
 ## Pravila
 
 - Nikad ne pokreći iste validatorske ključeve na dva mjesta istovremeno (slashing).

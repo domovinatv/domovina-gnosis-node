@@ -4,6 +4,9 @@ Od čistog Maca do sinkroniziranog čvora. Koraci 1–6 traju oko 30 minuta rada
 
 ## 0. Prije početka
 
+Prvo pročitaj [otvorene stavke iz 2026-10-01](2026-10-01-prepisivanje-i-otvorene-stavke.md#otvorene-stavke-na-i9): to je popis onoga što pri ovoj instalaciji treba provjeriti i zapisati.
+
+
 - [ ] Mac je na struji i na žičanom Ethernetu, poklopac je otvoren, stroj stoji na postolju.
 - [ ] Na disku je barem 500 GB slobodnog, poželjno 700 GB ([docs/03](03-macbook-host.md)).
 - [ ] Odlučeno je o FileVaultu ([docs/03](03-macbook-host.md#filevault)).
