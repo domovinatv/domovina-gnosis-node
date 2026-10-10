@@ -114,8 +114,21 @@ Nalazi:
 - **RustDesk je pokrenut.** On drži `displaysleep` i `sleep` budnima (`sleep prevented by … RustDesk`). Za čvor to nije problem, ali RustDesk je dodatna površina za udaljeni pristup ovom stroju. Treba odlučiti ostaje li ([docs/09](09-security.md)).
 - **`df -h /` pokazuje sistemski volumen** (12 GiB used). Prostor za čvor se prati na `/System/Volumes/Data`, a `Avail` je zajednički za oba volumena.
 
+## Instalacija klijenata (`20-install.sh`)
 
-- [ ] Instalacija: `scripts/00-preflight.sh`, pa `sudo scripts/10-host-setup.sh` i dalje po [runbooku](04-install-runbook.md).
+Pokrenuto 2026-10-10 u 17:54, gotovo u 17:55. Nethermind 2.1.0, Temurin JRE jdk-25.0.4.1+1 i Teku 26.10.0: svi SHA-256 su u redu, svi fajlovi su `root:wheel` i nijedan nema quarantine flag. Disk: 533 → 532 GiB slobodno.
+
+Zamke:
+
+- **Naredba zalijepljena u iTerm se nije izvršila**, a ekran je izgledao kao da nešto radi (samo prazni redovi). Provjera je `ps` (ima li `sudo`/`tee` ispod shella tog taba) i postoji li log fajl, jer `tee` ga stvara odmah, i prije `sudo` lozinke.
+- **`sudo` na macOS-u zadržava `HOME`.** gpg je zato kao root koristio `/Users/ms/.gnupg`: ostavio je root-owned `crls.d` i `S.dirmngr` te pokrenuo `dirmngr` kao root. Nakon toga ni gpg korisnika `ms` nije mogao do keyservera (`No dirmngr`). Ispravljeno je tako da `20-install.sh` pokreće gpg kao `$SUDO_USER` (`sudo -u … -H`), pa koristi admin keyring u koji runbook § 5 uvozi Nethermindov ključ.
+
+## Otvoreno
+
+- [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.
+- [ ] § 6 servisi i § 7 sync po [runbooku](04-install-runbook.md).
+- [ ] Očistiti root ostatke gpg-a u `~/.gnupg` i provjeriti GPG potpis Nethermind 2.1.0.
+- [ ] RustDesk: ostaje li na čvoru.
 - [ ] Disk pratiti tijekom synca. Ako slobodno padne ispod ~50 GB, slijedi čišćenje: obrisati račun `stepanic` (procjena +110 GB) i/ili s `ms` ukloniti `~/Library/Developer/CoreSimulator`, Xcode.app (CLT ostaju), Android Studio, FlutterFlow, `fvm`, `.pub-cache`, `.cocoapods` i instalere iz Downloads. `.nvm` ostaje, jer listener treba Node 22+.
 - [ ] Prije brisanja računa `stepanic` provjeriti nepushane commitove u `/Users/stepanic/git` (31 GB).
 - [ ] `~/thermal-backup` (root, rujan 2026: backup LaunchAgents/Daemons, „server-mode”) **ne brisati** dok se ne zna što je.
