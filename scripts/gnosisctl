@@ -122,7 +122,7 @@ cmd_health() {
 cmd_logs() {
   local s="${1:?usage: gnosisctl logs <service>}" f
   case "$s" in
-    nethermind) f="$(ls -t "$LOG_DIR"/nethermind/*.txt 2>/dev/null | head -1)" ;;
+    nethermind) f="$(ls -t "$LOG_DIR"/nethermind/*.log "$LOG_DIR"/nethermind/*.txt 2>/dev/null | head -1)" ;;
     teku)       f="$LOG_DIR/teku/teku.log" ;;
     lighthouse) f="$(ls -t "$LOG_DIR"/lighthouse/*.log 2>/dev/null | head -1)" ;;
     validator)  f="$LOG_DIR/validator/validator.log" ;;

@@ -137,8 +137,30 @@ Pokrenuto 2026-10-10 u 18:08. Oba plista su učitana bez greške.
   **Ispravak:** plist sada postavlja `HOME=/opt/gnosis/state/nethermind` i `DOTNET_BUNDLE_EXTRACT_BASE_DIR=…/dotnet-bundle`, a `30-services.sh` stvara `state/<servis>` u vlasništvu `_gnosis`. Raspakirane biblioteke tako pripadaju servisnom korisniku, a ne rootu. To je malo odstupanje od [ADR-004](02-decisions.md#adr-004), jer binariji iz zipa ostaju root-owned.
 
 
+## Sinkronizacija: prvi sat
+
+Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot block from Consensus Layer isn't higher than pivot from initial config. New PivotBlockNumber: 0, old: 48330000`. To je normalno: ima pivot hash od Teku, ali još ne i header od peerova. U 18:12:48 je primio forkchoice za blok 48687435 i krenuo.
+
+| Vrijeme | Snap state ranges | Old headers | Baza | Slobodno | EL / CL peerovi |
+| --- | --- | --- | --- | --- | --- |
+| 18:12 | 0 % | 0 | 0,1 GB | 532 GiB | 0 / 2 |
+| 18:22 | 5,43 % | 2,0 M / 48,7 M, 4.263 blk/s | 2,8 GB | 529 GiB | |
+| 18:32 | 7,26 % | 5,0 M, 6.567 blk/s | 5,6 GB | 526 GiB | ? / 10 |
+| 18:42 | | | | 522 GB | **4** / 11 |
+
+- Backend je patricia (`State backend: patricia (flat DB disabled)`), a JWT je pročitan iz `secrets/jwt.hex`.
+- **Snap usporava** (1,8 % u 10 min), a **EL ima samo 4 peera**, od toga 0 aktivnih za snap (`Sleeping: 2 Snap`). Teku na istoj mreži ima 11 peerova.
+- macOS firewall nije uzrok: `socketfilterfw --listapps` za `nethermind` i `java` pokazuje „Allow incoming connections”. Uzrok je vjerojatnije router bez port forwardinga, uz malu Gnosis EL mrežu.
+- Ako EL ostane na ~4 peera, idući korak je port forward 30303 TCP/UDP na routeru. Za P2P to ne krši [ADR-005](02-decisions.md#adr-005), koji se odnosi na RPC.
+- Nethermind log je `logs/nethermind/gnosis.log`, a ne `*.txt`. `gnosisctl logs nethermind` je zato tražio krivi fajl; ispravljeno.
+- U install diru Nethermind postoje `Data/` i `keystore/` iz zipa. Nethermind nije pisao pored binarija, sve ide u `data/nethermind`.
+
+## Otvoreno
+
 - [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.
-- [ ] § 6 servisi i § 7 sync po [runbooku](04-install-runbook.md).
+- [x] § 6 servisi.
+- [ ] § 7 sync do kraja, pa § 8 pravi restart (Wi-Fi bez logina!).
+- [ ] EL peerovi: ako ostanu na ~4, port forward 30303 TCP/UDP.
 - [ ] Očistiti root ostatke gpg-a u `~/.gnupg` i provjeriti GPG potpis Nethermind 2.1.0.
 - [ ] RustDesk: ostaje li na čvoru.
 - [ ] Disk pratiti tijekom synca. Ako slobodno padne ispod ~50 GB, slijedi čišćenje: obrisati račun `stepanic` (procjena +110 GB) i/ili s `ms` ukloniti `~/Library/Developer/CoreSimulator`, Xcode.app (CLT ostaju), Android Studio, FlutterFlow, `fvm`, `.pub-cache`, `.cocoapods` i instalere iz Downloads. `.nvm` ostaje, jer listener treba Node 22+.

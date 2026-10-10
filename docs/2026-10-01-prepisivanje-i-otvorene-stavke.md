@@ -47,8 +47,8 @@ Nijedan od ovih problema ne bi javio grešku pri pokretanju. Čvor bi se jednost
 ## Otvorene stavke (na i9)
 
 - [ ] **Background Task Management:** nakon pravog restarta svi daemoni su `running` (`gnosisctl status`, `sudo sfltool dumpbtm`).
-- [ ] **Nethermind piše pored binarija?** Install dir je u vlasništvu roota. Ako se servis ruši s `Permission denied`, iz loga uzeti putanju i preusmjeriti je flagom u `data/`.
-- [ ] **NLog naziv log fajla** u `logs/nethermind/`. `gnosisctl logs` pretpostavlja `*.txt`.
+- [x] **Nethermind piše pored binarija?** Ne (2026-10-10), ali mu treba pisivi `HOME` za .NET bundle. Install dir je u vlasništvu roota. Ako se servis ruši s `Permission denied`, iz loga uzeti putanju i preusmjeriti je flagom u `data/`.
+- [x] **NLog naziv log fajla** u `logs/nethermind/`: `gnosis.log`, a `gnosisctl logs` je pretpostavljao `*.txt`. Ispravljeno (2026-10-10).
 - [ ] **Stvarno trajanje sinkronizacije i zauzeće diska** upisati u Dnevnik u `docs/05`.
 - [x] **`pmset -g cap`:** postoji li `autorestartatconnect` na MBP 2019 s macOS-om 26. **Ne postoji**, kao ni `autorestart` (2026-10-10).
 - [ ] **Poštuje li Tahoe `defaults` ključeve za automatske updateove.** Svejedno ih isključiti i u GUI-ju.
