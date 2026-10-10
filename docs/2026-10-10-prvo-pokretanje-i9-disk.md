@@ -155,11 +155,32 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - Nethermind log je `logs/nethermind/gnosis.log`, a ne `*.txt`. `gnosisctl logs nethermind` je zato tražio krivi fajl; ispravljeno.
 - U install diru Nethermind postoje `Data/` i `keystore/` iz zipa. Nethermind nije pisao pored binarija, sve ide u `data/nethermind`.
 
+## Sinkronizacija: stanje gotovo (4 h 13 min)
+
+| Vrijeme | Događaj | Baza | Slobodno | EL peerovi |
+| --- | --- | --- | --- | --- |
+| 18:12:48 | početak (pivot 48687435) | 0,1 GB | 532 GiB | 0 |
+| 19:44 | snap state ranges 28 %, headeri 74 % | 41 GB | 491 GiB | 5 |
+| 20:14 | headeri gotovi (~2 h) | | | 4 |
+| 20:53 | state ranges 99,4 %; počinje „Large storage” | 115 GB | 417 GiB | 6 |
+| 22:25 | snap gotov, healing („State Sync”) traje < 1 min | ~166 GB | 363 GiB | |
+| 22:25 | **Teku više nije optimistic; Nethermind prati vrh lanca** | | 355 GB | 8 |
+
+- Prvih ~2 h snap je jedva napredovao, jer su 4 EL peera bila zauzeta headerima. Kad su headeri završili, state ranges su od 34 % do 99 % došli za ~45 min.
+- „Large storage” (storage nekoliko velikih ugovora, zadnji vuče jedan peer) trajao je ~1 h 30 min, oko 1 % u minuti.
+- Healing je bio gotovo trenutan. Brojka „/ 137350 MB” u `State Sync` je procjena ukupnog stanja, a ne posao koji preostaje.
+- U 22:30: `eth_blockNumber` vraća vrh lanca, head star 2 s, Teku `sync_distance 0`, 15 CL peerova. `eth_syncing` i dalje vraća objekt (ne `false`), jer traje preuzimanje povijesti.
+- Promet do 21:50 (od 18:11): Nethermind 61 GB down / 0,33 GB up, Teku 0,16 / 0,19 GB. Teku na vrhu lanca troši ~0,2 Mbit/s.
+- Opterećenje tijekom snapa: Nethermind 640–1.270 % CPU (od 1.600 %), Teku ~230 % dok čeka EL, ventilatori ~5.400 RPM.
+- Nakon toga slijede **Old Bodies** (23,3 M blokova, početak ~1.700 blk/s) i Old Receipts.
+
 ## Otvoreno
 
 - [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.
 - [x] § 6 servisi.
-- [ ] § 7 sync do kraja, pa § 8 pravi restart (Wi-Fi bez logina!).
+- [x] § 7 stanje sinkronizirano (22:25), čvor prati vrh lanca.
+- [ ] Old bodies i receipts do kraja (`eth_syncing` = `false`), pa izmjeriti CPU, ventilatore, promet i `du -sh /opt/gnosis/data/*`.
+- [ ] § 8 pravi restart (Wi-Fi bez logina!).
 - [ ] Nakon synca: port forward 30303 TCP/UDP, 9000 TCP/UDP i 9001 UDP ([ADR-009](02-decisions.md#adr-009)), pa usporediti EL/CL peerove i CPU prije i poslije. `--p2p-quic-port` je u plistu tek nakon `sudo scripts/30-services.sh install teku`; vrijednost je ista kao Tekuov default, pa nije hitno.
 - [ ] Očistiti root ostatke gpg-a u `~/.gnupg` i provjeriti GPG potpis Nethermind 2.1.0.
 - [ ] RustDesk: ostaje li na čvoru.
