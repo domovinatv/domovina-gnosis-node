@@ -50,7 +50,7 @@ Nijedan od ovih problema ne bi javio grešku pri pokretanju. Čvor bi se jednost
 - [ ] **Nethermind piše pored binarija?** Install dir je u vlasništvu roota. Ako se servis ruši s `Permission denied`, iz loga uzeti putanju i preusmjeriti je flagom u `data/`.
 - [ ] **NLog naziv log fajla** u `logs/nethermind/`. `gnosisctl logs` pretpostavlja `*.txt`.
 - [ ] **Stvarno trajanje sinkronizacije i zauzeće diska** upisati u Dnevnik u `docs/05`.
-- [ ] **`pmset -g cap`:** postoji li `autorestartatconnect` na MBP 2019 s macOS-om 26.
+- [x] **`pmset -g cap`:** postoji li `autorestartatconnect` na MBP 2019 s macOS-om 26. **Ne postoji**, kao ni `autorestart` (2026-10-10).
 - [ ] **Poštuje li Tahoe `defaults` ključeve za automatske updateove.** Svejedno ih isključiti i u GUI-ju.
 - [ ] **FileVault odluka** zapisana kao ADR.
 - [ ] Peer count bez port forwardinga je dovoljan (EL ≥ 10, CL stabilan).

@@ -88,6 +88,8 @@ setup_power() {
   # Never sleep, no hibernation image, keep network alive. Display may sleep.
   pmset -a sleep 0 disksleep 0 displaysleep 10 powernap 0 standby 0 \
            autopoweroff 0 hibernatemode 0 tcpkeepalive 1 womp 1 ttyskeepawake 1
+  # Low Power Mode caps CPU clocks, also on AC; a syncing node needs full speed.
+  if pmset -g cap | grep -qw lowpowermode; then pmset -a lowpowermode 0; fi
   # Boot when power returns after a fully drained battery, where supported.
   if pmset -g cap | grep -qw autorestartatconnect; then pmset -a autorestartatconnect 1; fi
   if pmset -g cap | grep -qw autorestart; then pmset -a autorestart 1; fi

@@ -103,7 +103,17 @@ Provjereno na i9 (x86_64, bez Rosette):
 - **Nethermind #13601** (flat DB + snap sync se ne nastavlja nakon restarta) je i dalje otvoren. `NM_FLATDB=false` ostaje ([ADR-002](02-decisions.md#adr-002)).
 - 2.1.0 sada **odbija** `--FlatDb.Enabled=false` na postojećoj flat bazi. U 2.0.0 ju je tiho brisao i sinkronizirao ispočetka. Za nas to znači da slučajna promjena `NM_FLATDB` na sinkroniziranom čvoru više ne briše bazu, nego servis ne starta.
 
-## Otvoreno
+## Host setup (`10-host-setup.sh`)
+
+Pokrenut 2026-10-10 u 17:32. Svi koraci su prošli: `_gnosis` (uid/gid 470), `/opt/gnosis` s ispravnim vlasnicima, JWT, pmset, updateovi, firewall i newsyslog. `ms` je odmah u grupi `_gnosis` (`id -Gn`).
+
+Nalazi:
+
+- **`lowpowermode 1` i na AC i na bateriji.** Low Power Mode drži CPU na nižem taktu, što bi usporilo sync. Skripta ga do sada nije dirala. Dodano je `pmset -a lowpowermode 0`, ako ga `pmset -g cap` nudi.
+- **`pmset -g cap` nema ni `autorestart` ni `autorestartatconnect`.** Skripta ih zato preskače, a [docs/03](03-macbook-host.md#napajanje-pmset) je ažuriran.
+- **RustDesk je pokrenut.** On drži `displaysleep` i `sleep` budnima (`sleep prevented by … RustDesk`). Za čvor to nije problem, ali RustDesk je dodatna površina za udaljeni pristup ovom stroju. Treba odlučiti ostaje li ([docs/09](09-security.md)).
+- **`df -h /` pokazuje sistemski volumen** (12 GiB used). Prostor za čvor se prati na `/System/Volumes/Data`, a `Avail` je zajednički za oba volumena.
+
 
 - [ ] Instalacija: `scripts/00-preflight.sh`, pa `sudo scripts/10-host-setup.sh` i dalje po [runbooku](04-install-runbook.md).
 - [ ] Disk pratiti tijekom synca. Ako slobodno padne ispod ~50 GB, slijedi čišćenje: obrisati račun `stepanic` (procjena +110 GB) i/ili s `ms` ukloniti `~/Library/Developer/CoreSimulator`, Xcode.app (CLT ostaju), Android Studio, FlutterFlow, `fvm`, `.pub-cache`, `.cocoapods` i instalere iz Downloads. `.nvm` ostaje, jer listener treba Node 22+.

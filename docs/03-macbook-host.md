@@ -24,12 +24,15 @@ Stroj: MacBook Pro 16" (2019), Intel Core i9 (8 jezgri / 16 dretvi), 64 GB RAM, 
 ```
 sleep 0  disksleep 0  displaysleep 10  powernap 0  standby 0  autopoweroff 0
 hibernatemode 0  tcpkeepalive 1  womp 1  ttyskeepawake 1
+lowpowermode 0           (samo ako `pmset -g cap` to nudi)
 autorestartatconnect 1   (samo ako `pmset -g cap` to nudi)
 ```
 
+- **Low Power Mode** spušta takt CPU-a i na struji. Na i9 je zatečen uključen (`lowpowermode 1`) i za AC i za bateriju.
+
 - Sustav nikad ne spava. Ekran se gasi nakon 10 minuta, a čvor radi i dalje.
 - `autorestart` (paljenje nakon nestanka struje) je opcija za desktop računala i na laptopu je nema. **Baterija je UPS**: s njom stroj prebrodi nestanak struje bez gašenja.
-- Ako se baterija potpuno isprazni, Intel MBP se u pravilu sam upali kad dobije struju. To još treba provjeriti na ovom stroju.
+- MBP 2019 na macOS-u 26 **nema** ni `autorestart` ni `autorestartatconnect` u `pmset -g cap` (provjereno 2026-10-10). Hoće li se upaliti sam kad se baterija potpuno isprazni pa dobije struju, nije provjereno. Ne oslanjati se na to.
 
 ✋ **Poklopac ostaje otvoren.** Clamshell mode traži vanjski monitor, a i9 se zatvoren dodatno grije. Ekran se ugasi ili mu se svjetlina spusti na nulu.
 

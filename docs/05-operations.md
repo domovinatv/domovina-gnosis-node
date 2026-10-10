@@ -106,3 +106,4 @@ Ovdje kronološki upisivati događaje na čvoru: instalaciju, upgradeove, ispade
 | --- | --- |
 | 2026-10-01 | Repo prepisan od nule (Claude Code), čvor još nije instaliran |
 | 2026-10-10 | Prvi `00-preflight.sh` na i9: sve OK osim diska (226 GB slobodno). Disk očišćen na 534 GB. Odluka: prva instalacija je namjerni test s ~500 GB diska i na Wi-Fi (428/424 Mbps), čišćenje po potrebi tijekom synca. [Detalji](2026-10-10-prvo-pokretanje-i9-disk.md) |
+| 2026-10-10 | Verzije prije instalacije: Nethermind 2.0.0 → 2.1.0, Teku 26.9.1 → 26.10.0 (provjereno na i9). `config/node.env` iz primjera, preflight prolazi (warn: disk 533 GB, FileVault OFF). `10-host-setup.sh` prošao u 17:32. Zatečen `lowpowermode 1` na AC; skripta ga sada gasi. [Detalji](2026-10-10-prvo-pokretanje-i9-disk.md#host-setup-10-host-setupsh) |
