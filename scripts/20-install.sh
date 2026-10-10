@@ -22,8 +22,12 @@ install_nethermind() {
   fetch "https://github.com/NethermindEth/nethermind/releases/download/$v/$file" "$file" "$NETHERMIND_SHA256"
   if command -v gpg >/dev/null 2>&1; then
     # Optional second check; the pinned checksum above is the gate.
+    # Run gpg as the admin: sudo on macOS keeps HOME, so gpg as root would
+    # write root-owned files into ~/.gnupg and leave a root dirmngr behind.
+    local gpg_cmd=(gpg)
+    [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]] && gpg_cmd=(sudo -u "$SUDO_USER" -H gpg)
     curl -fsSL -o "$CACHE_DIR/$file.asc" "https://github.com/NethermindEth/nethermind/releases/download/$v/$file.asc" &&
-      gpg --verify "$CACHE_DIR/$file.asc" "$CACHE_DIR/$file" 2>&1 | sed 's/^/      gpg: /' || warn "gpg check failed or key not imported (see docs/04)"
+      "${gpg_cmd[@]}" --verify "$CACHE_DIR/$file.asc" "$CACHE_DIR/$file" 2>&1 | sed 's/^/      gpg: /' || warn "gpg check failed or key not imported (see docs/04)"
   fi
   rm -rf "$dir"; mkdir -p "$dir"
   unzip -q "$CACHE_DIR/$file" -d "$dir"
