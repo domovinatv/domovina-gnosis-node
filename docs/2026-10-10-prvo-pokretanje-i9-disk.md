@@ -174,6 +174,13 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - Opterećenje tijekom snapa: Nethermind 640–1.270 % CPU (od 1.600 %), Teku ~230 % dok čeka EL, ventilatori ~5.400 RPM.
 - Nakon toga slijede **Old Bodies** (23,3 M blokova, početak ~1.700 blk/s) i Old Receipts.
 
+## Povijest: disk ne bi bio dovoljan
+
+- 22:49: Old Bodies 15 %, baza 207 GB (+41 GB od 22:25). Linearna projekcija za bodies je ~260 GB, a za receipts (Nethermind dokumentacija) 218 GB. Slobodno je bilo ~349 GB, pa bi se disk napunio tijekom receiptsa.
+- 23:19: bodies 35 %, baza 253 GB, slobodno 278 GiB.
+- 23:21: najstarije preuzeto tijelo je blok ~39.956.500 (2025-05-08). Receipts postoje samo od 22:25.
+- Odluka: povijest samo od bloka 42.550.000 (2025-10-10), [ADR-010](02-decisions.md#adr-010). Za taj broj bloka se ne treba pouzdati u „5 s po bloku”: prosjek je bio ~5,2 s, pa je blok traženi preko `eth_getBlockByNumber` i `timestamp`.
+
 ## Otvoreno
 
 - [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.

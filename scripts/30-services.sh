@@ -94,6 +94,11 @@ render_service() {
   file="$dir/$(label "$svc").plist"
   case "$svc" in
     nethermind)
+      local nm_extra=()
+      if [[ -n "${NM_HISTORY_FROM_BLOCK:-}" ]]; then
+        nm_extra+=(--Sync.AncientBodiesBarrier "$NM_HISTORY_FROM_BLOCK"
+                   --Sync.AncientReceiptsBarrier "$NM_HISTORY_FROM_BLOCK")
+      fi
       # Nethermind is a .NET single-file bundle that extracts native libraries
       # on start. The service user's home is /var/empty (read-only), so give it
       # a writable home and extraction dir, or it exits with code 159.
@@ -117,7 +122,8 @@ render_service() {
         --FlatDb.Enabled "$NM_FLATDB" \
         --Network.MaxActivePeers "$NM_MAX_PEERS" \
         --Network.P2PPort "$EL_P2P_PORT" \
-        --Network.DiscoveryPort "$EL_P2P_PORT"
+        --Network.DiscoveryPort "$EL_P2P_PORT" \
+        ${nm_extra[@]+"${nm_extra[@]}"}
       ;;
     teku)
       teku_java_cmd "$TEKU_HEAP"

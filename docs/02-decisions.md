@@ -189,3 +189,27 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 - **Više nodova iza iste IP adrese** je moguće. Svaki dobiva svoje portove (npr. 30304/9002/9003) i svoja pravila na routeru. Vanjski port mora biti jednak unutarnjem, jer node objavljuje port na kojem sluša. Inače treba postaviti advertised portove (Teku `--p2p-advertised-port`, `--p2p-advertised-udp-port`, `--p2p-advertised-quic-port`).
 - Na Macu treba provjeriti da application firewall pušta `nethermind` i `java` (`socketfilterfw --listapps`: „Allow incoming connections”). Na i9 je to već slučaj.
 
+---
+
+## ADR-010: Povijest blokova i receiptsa samo od zadnjih godinu dana {#adr-010}
+
+**Kontekst** (izmjereno na i9, 2026-10-10, [dnevnik](2026-10-10-prvo-pokretanje-i9-disk.md)):
+
+- Nakon snapa (22:25) baza je imala ~166 GB, a slobodno je bilo ~363 GiB.
+- Nethermind po defaultu za Gnosis preuzima tijela blokova i receipts sve do bloka 25.349.537 (2022). Prvih 15 % bodiesa je zauzelo 41 GB. Nethermind dokumentacija navodi ~218 GB samo za receipts. Projekcija je bila da cijela povijest **ne stane** na disk.
+- Čvor služi za vlastiti RPC (novčanik, ugovori koje deployamo), notifikacije o novim uplatama i kasnije validator. Ništa od toga ne treba transakcije i logove starije od godinu dana. Stara povijest je dostupna na Gnosisscanu, Blockscoutu i indexerima.
+- Ethereum ide u istom smjeru: nodovi više ne moraju čuvati staru povijest (EIP-4444, history expiry).
+
+**Odluka.**
+
+- `NM_HISTORY_FROM_BLOCK=42550000` (blok od 2025-10-10 11:17, provjereno preko RPC-a). `30-services.sh` ga postavlja kao `Sync.AncientBodiesBarrier` i `Sync.AncientReceiptsBarrier`.
+- Granica je **fiksni blok**, a ne pomični prozor. Od nje nadalje čvor čuva sve.
+- `History.Pruning=Rolling` (pravi pomični prozor) se ne uključuje dok se ne provjeri na Gnosisu. Opcija traži parametar `minHistoryRetentionEpochs` u chainspecu.
+
+**Posljedice.**
+
+- `eth_getBlockByNumber`, receipts i `eth_getLogs` za blokove prije granice vraćaju `null` ili prazno.
+- Tijela blokova koja su na i9 preuzeta prije promjene (do ~2025-05-08) ostaju na disku.
+- Promjena je reverzibilna. Spuštanjem granice i restartom Nethermind dopunjava stariju povijest, ako ima mjesta.
+- Peerovi koji traže staru povijest od ovog čvora je neće dobiti. Mreža to podnosi, jer arhivske nodove drže drugi.
+
