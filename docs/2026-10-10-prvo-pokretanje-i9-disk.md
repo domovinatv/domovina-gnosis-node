@@ -190,6 +190,14 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - **Receipts na disku su manji nego što prva brojka sugerira.** U 23:35 je bilo 7,9 GB za 131 k blokova (~58 KB/blok), a u 23:40 4,7 GB za 325 k blokova (~15 KB/blok), zbog RocksDB kompakcije i `Receipt.CompactReceiptStore`. Projekcija za godinu je ~90 GB. Ne zaključivati o disku iz prvih minuta pisanja.
 - **Lookup transakcije po hashu treba receipts.** `eth_getTransactionByHash` je za transakciju iz bloka 48.654.130 vraćao `null`, iako je tijelo bloka bilo lokalno: `eth_getTransactionByBlockNumberAndIndex` ju je vratio. Nethermind indeks hash → blok gradi zajedno s receiptsima. Kad su Old Receipts stigli do tog bloka (2 min kasnije), radili su i lookup po hashu i receipt.
 
+## Sync gotov (2026-10-11 00:27:33)
+
+- `Fast blocks receipts task completed` u 00:27:33. `eth_syncing` vraća `false`, a `gnosisctl health` je zelen osim broja EL peerova (8). Brojač Old Receipts je stao na 98,2 %, jer je zadnjih ~110 k bilo u redu za obradu.
+- **Ukupno: 6 h 15 min** od starta Nethermind (18:12) do kraja, s restartom u 23:27 (ADR-010) i ~4,5 min starta nakon njega. Stanje je bilo gotovo za 4 h 13 min.
+- Baza u 00:31: state 146 GB, blocks 98 GB, receipts 36 GB (godina, nakon kompakcije), headers 16 GB. Ukupno 304 GB. Slobodno 227–229 GiB.
+- Mirovanje (00:31–00:48): mreža 4,9 Mbit/s down / 0,9 up, disk 9 MB/s, Teku 37 % CPU. Obrada novog bloka ~35 ms (`newPayload` ~12 ms prosjek).
+- **Nethermind nakon synca troši ~1.400–1.500 % CPU-a, od čega ~60 % sistemsko vrijeme**, i nakon 20 min se ne smiruje. Nema aktivne RocksDB kompakcije (LOG fajlovi), a u logu nema ništa osim obrade blokova. Stvarni posao je ~35 ms svakih 5 s, pa je ovo pozadinska petlja, a ne praćenje lanca. Uzrok se ne vidi bez `sudo sample <pid>` (proces radi kao `_gnosis`).
+
 ## Otvoreno
 
 - [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.
@@ -197,7 +205,8 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - [x] § 7 stanje sinkronizirano (22:25), čvor prati vrh lanca.
 - [ ] Nakon receiptsa: `sudo scripts/30-services.sh install nethermind` za pomični prozor od 367 dana ([ADR-010](02-decisions.md#adr-010)), pa pratiti prvi prolaz brisanja (koliko blokova i GB).
 - [ ] Tjedan dana mjeriti rast `state` (bilo 146 GB u 22:25, 153 GB u 23:48), pa odlučiti o full pruning trigeru i upisati realnu procjenu trajanja diska.
-- [ ] Old bodies i receipts do kraja (`eth_syncing` = `false`), pa izmjeriti CPU, ventilatore, promet i `du -sh /opt/gnosis/data/*`.
+- [x] Old bodies i receipts do kraja (00:27:33). Promet i disk izmjereni.
+- [ ] **Nethermind ~1.500 % CPU nakon synca:** `sudo sample` pa uzrok. Ventilatori u mirovanju se mogu izmjeriti tek nakon toga.
 - [ ] § 8 pravi restart (Wi-Fi bez logina!).
 - [ ] Nakon synca: port forward 30303 TCP/UDP, 9000 TCP/UDP i 9001 UDP ([ADR-009](02-decisions.md#adr-009)), pa usporediti EL/CL peerove i CPU prije i poslije. `--p2p-quic-port` je u plistu tek nakon `sudo scripts/30-services.sh install teku`; vrijednost je ista kao Tekuov default, pa nije hitno.
 - [ ] Očistiti root ostatke gpg-a u `~/.gnupg` i provjeriti GPG potpis Nethermind 2.1.0.
