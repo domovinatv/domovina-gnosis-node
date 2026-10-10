@@ -195,6 +195,8 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.
 - [x] § 6 servisi.
 - [x] § 7 stanje sinkronizirano (22:25), čvor prati vrh lanca.
+- [ ] Nakon receiptsa: `sudo scripts/30-services.sh install nethermind` za pomični prozor od 367 dana ([ADR-010](02-decisions.md#adr-010)), pa pratiti prvi prolaz brisanja (koliko blokova i GB).
+- [ ] Tjedan dana mjeriti rast `state` (bilo 146 GB u 22:25, 153 GB u 23:48), pa odlučiti o full pruning trigeru i upisati realnu procjenu trajanja diska.
 - [ ] Old bodies i receipts do kraja (`eth_syncing` = `false`), pa izmjeriti CPU, ventilatore, promet i `du -sh /opt/gnosis/data/*`.
 - [ ] § 8 pravi restart (Wi-Fi bez logina!).
 - [ ] Nakon synca: port forward 30303 TCP/UDP, 9000 TCP/UDP i 9001 UDP ([ADR-009](02-decisions.md#adr-009)), pa usporediti EL/CL peerove i CPU prije i poslije. `--p2p-quic-port` je u plistu tek nakon `sudo scripts/30-services.sh install teku`; vrijednost je ista kao Tekuov default, pa nije hitno.

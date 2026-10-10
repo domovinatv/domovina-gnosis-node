@@ -204,12 +204,13 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 
 - `NM_HISTORY_FROM_BLOCK=42550000` (blok od 2025-10-10 11:17, provjereno preko RPC-a). `30-services.sh` ga postavlja kao `Sync.AncientBodiesBarrier` i `Sync.AncientReceiptsBarrier`.
 - Granica je **fiksni blok**, a ne pomični prozor. Od nje nadalje čvor čuva sve.
-- `History.Pruning=Rolling` (pravi pomični prozor) se ne uključuje dok se ne provjeri na Gnosisu. Opcija traži parametar `minHistoryRetentionEpochs` u chainspecu.
+- **Dopuna 2026-10-11: pomični prozor od 367 dana.** `NM_HISTORY_RETENTION_EPOCHS=396360` postavlja `History.Pruning=Rolling` i `History.RetentionEpochs` (Gnosis epoha = 80 s, pa 396.360 epoha = 367 dana, cijela godina uz rezervu). Blokovi i receipts stariji od prozora se brišu kako novi dolaze, pa povijest na disku ostaje ~konstantna (~160 GB, izmjereno ~27 KB po bloku, ~16.500 blokova dnevno). Nethermind 2.1.0 ovu postavku za Gnosis prihvaća bez greške (probni čvor na i9). Briše li stvarno ispravno, provjerava se nakon prvog prolaza na čvoru.
 
 **Posljedice.**
 
 - `eth_getBlockByNumber`, receipts i `eth_getLogs` za blokove prije granice vraćaju `null` ili prazno.
-- Tijela blokova koja su na i9 preuzeta prije promjene (do ~2025-05-08) ostaju na disku.
+- Tijela blokova koja su na i9 preuzeta prije promjene (do ~2025-05-08) ostaju dok ih ne obriše pomični prozor.
+- Stanje (state) pomični prozor ne dira. Patricia trie raste zasebno i povremeno treba full pruning, za koji mora biti slobodno otprilike koliko je živo stanje. Rast se mjeri tjedan dana prije odluke o trigeru.
 - Promjena je reverzibilna. Spuštanjem granice i restartom Nethermind dopunjava stariju povijest, ako ima mjesta.
 - Peerovi koji traže staru povijest od ovog čvora je neće dobiti. Mreža to podnosi, jer arhivske nodove drže drugi.
 

@@ -99,6 +99,10 @@ render_service() {
         nm_extra+=(--Sync.AncientBodiesBarrier "$NM_HISTORY_FROM_BLOCK"
                    --Sync.AncientReceiptsBarrier "$NM_HISTORY_FROM_BLOCK")
       fi
+      if [[ -n "${NM_HISTORY_RETENTION_EPOCHS:-}" ]]; then
+        nm_extra+=(--History.Pruning Rolling
+                   --History.RetentionEpochs "$NM_HISTORY_RETENTION_EPOCHS")
+      fi
       # Nethermind is a .NET single-file bundle that extracts native libraries
       # on start. The service user's home is /var/empty (read-only), so give it
       # a writable home and extraction dir, or it exits with code 159.
