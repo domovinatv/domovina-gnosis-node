@@ -207,6 +207,13 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - To je Nethermind PR [#14162](https://github.com/NethermindEth/nethermind/pull/14162) (otvoren, nije u 2.1.0). .NET thread-pool niti koje ostanu bez posla se prije spavanja vrte i zovu `sched_yield`: default je 70 iteracija, a na Unixu .NET to udvostruči. Nethermindov pool naraste na više od 100 niti, pa spin pojede CPU.
 - Ispravak je ista postavka kao u PR-u, preko varijable okoline u plistu: `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0`. Ukloniti kad Nethermind izda verziju s #14162.
 
+## Restart sa spin ispravkom i pomičnim prozorom (01:02)
+
+- Start je trajao 298 s, opet zbog otvaranja baze.
+- **Spin ispravak radi djelomično:** sustav je s 0 % idle (60 % sys) došao na 51–57 % idle (~16 % sys). Nethermind je pao s ~1.500 % na ~530–545 %, što je i dalje puno za ~35 ms posla svakih 5 s. Uzrok ostatka je otvoren.
+- **Zamka: Nethermind epohu za `History.RetentionEpochs` računa kao 32 bloka.** Pruner je javio `Pruning historical blocks up to #36008506 (0 estimated)`. To je točno `head − 396360 × 32`, dakle dvije godine, a ne 367 dana. Gnosis ima 16 slotova po epohi, ali Nethermind 2.1.0 to ne uzima u obzir. Ispravno za 367 dana je **198.180** (32 × 5 s = 160 s po „epohi”).
+- Pruner je usput obrisao 10,4 M praznih block access lists (Glamsterdam struktura, na Gnosisu još nije aktivna).
+
 ## Otvoreno
 
 - [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.

@@ -204,7 +204,7 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 
 - `NM_HISTORY_FROM_BLOCK=42550000` (blok od 2025-10-10 11:17, provjereno preko RPC-a). `30-services.sh` ga postavlja kao `Sync.AncientBodiesBarrier` i `Sync.AncientReceiptsBarrier`.
 - Granica je **fiksni blok**, a ne pomični prozor. Od nje nadalje čvor čuva sve.
-- **Dopuna 2026-10-11: pomični prozor od 367 dana.** `NM_HISTORY_RETENTION_EPOCHS=396360` postavlja `History.Pruning=Rolling` i `History.RetentionEpochs` (Gnosis epoha = 80 s, pa 396.360 epoha = 367 dana, cijela godina uz rezervu). Blokovi i receipts stariji od prozora se brišu kako novi dolaze, pa povijest na disku ostaje ~konstantna (~160 GB, izmjereno ~27 KB po bloku, ~16.500 blokova dnevno). Nethermind 2.1.0 ovu postavku za Gnosis prihvaća bez greške (probni čvor na i9). Briše li stvarno ispravno, provjerava se nakon prvog prolaza na čvoru.
+- **Dopuna 2026-10-11: pomični prozor od 367 dana.** `NM_HISTORY_RETENTION_EPOCHS=198180` postavlja `History.Pruning=Rolling` i `History.RetentionEpochs`. **Nethermind 2.1.0 računa epohu kao 32 bloka** (Ethereum), a ne kao Gnosisovih 16 slotova: granica je `head − epohe × 32`. Na Gnosisu je jedna takva „epoha” 160 s, pa je 198.180 = 367 dana, cijela godina uz rezervu. Prva vrijednost, 396.360, računata s 80 s po epohi, dala je dvije godine. Pruner ju je prijavio kao „up to #36008506” (= head − 396.360 × 32). Blokovi i receipts stariji od prozora se brišu kako novi dolaze, pa povijest na disku ostaje ~konstantna (~160 GB, izmjereno ~27 KB po bloku, ~16.500 blokova dnevno). Nethermind 2.1.0 ovu postavku za Gnosis prihvaća bez greške (probni čvor na i9). Briše li stvarno ispravno, provjerava se nakon prvog prolaza na čvoru.
 
 **Posljedice.**
 
