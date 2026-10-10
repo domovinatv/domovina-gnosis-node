@@ -71,7 +71,7 @@ Odjavi se i ponovno prijavi, kako bi članstvo u grupi `_gnosis` počelo vrijedi
 sudo scripts/20-install.sh
 ```
 
-Skripta preuzima Nethermind 2.0.0, Temurin JRE 25 i Teku 26.9.1 (oko 450 MB) i provjerava svaki SHA-256 iz `config/versions.env`. Ako checksum ne odgovara, skripta staje i briše fajl.
+Skripta preuzima Nethermind, Temurin JRE i Teku u verzijama iz `config/versions.env` (oko 450 MB) i provjerava svaki SHA-256 iz `config/versions.env`. Ako checksum ne odgovara, skripta staje i briše fajl.
 
 Opcionalno, GPG provjera Netherminda (treba `gpg`):
 

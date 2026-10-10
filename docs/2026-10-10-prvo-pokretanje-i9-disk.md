@@ -82,6 +82,27 @@ Dugoročno je plan kabel i dodatne optimizacije. Ako čvor sinkronizira i radi u
 - broj peerova za EL i CL te prekide Wi-Fi veze tijekom synca;
 - spaja li se Wi-Fi nakon pravog restarta **bez logina** (runbook § 8). Ovo je za Wi-Fi glavni rizik: mreža mora biti spremljena na razini sustava, a ne samo za korisnika.
 
+## Provjera verzija prije instalacije
+
+Po pravilu 1 iz [CLAUDE.md](../CLAUDE.md) verzije su provjerene protiv GitHub releases API-ja neposredno prije instalacije. Od 2026-10-01 izašle su dvije nove:
+
+| Komponenta | Bilo | Novo | Izašlo | Napomena |
+| --- | --- | --- | --- | --- |
+| Nethermind | 2.0.0 | **2.1.0** | 2026-10-01 | Glamsterdam za Sepoliu, brži EVM, RocksDB 11. Za Gnosis nije obavezno. |
+| Teku | 26.9.1 | **26.10.0** | 2026-10-08 | „recommended update”, bez breaking changes |
+| Temurin JRE | jdk-25.0.4.1+1 | isto | | |
+
+Gnosis nema zakazan novi fork (`gnosischain/configs`: zadnji je Fulu, epoha 1714688). Nadogradnja zato nije nužna. Kako je ovo **svježa** instalacija, uzete su nove verzije: sada ne koštaju ništa, a kasnije bi tražile restart.
+
+Provjereno na i9 (x86_64, bez Rosette):
+
+- SHA-256 obje arhive izračunat lokalno. Poklapa se s GitHub `digest` poljem, a za Teku i s `teku-26.10.0.tar.gz.sha256`.
+- `nethermind --help` (2.1.0, `macos-x64`): postoji svih 16 flagova koje koristi `30-services.sh`.
+- `teku --help` i `teku vc --help` (26.10.0 na Temurin JRE 25): postoje svi BN i VC flagovi.
+- `30-services.sh render` u test modu protiv stvarnog Teku 26.10.0 launchera: JVM opcije su pročitane, a `plutil -lint` prolazi.
+- **Nethermind #13601** (flat DB + snap sync se ne nastavlja nakon restarta) je i dalje otvoren. `NM_FLATDB=false` ostaje ([ADR-002](02-decisions.md#adr-002)).
+- 2.1.0 sada **odbija** `--FlatDb.Enabled=false` na postojećoj flat bazi. U 2.0.0 ju je tiho brisao i sinkronizirao ispočetka. Za nas to znači da slučajna promjena `NM_FLATDB` na sinkroniziranom čvoru više ne briše bazu, nego servis ne starta.
+
 ## Otvoreno
 
 - [ ] Instalacija: `scripts/00-preflight.sh`, pa `sudo scripts/10-host-setup.sh` i dalje po [runbooku](04-install-runbook.md).

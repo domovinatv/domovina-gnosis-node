@@ -14,7 +14,7 @@ Ovaj repo je **single source of truth**: odluke, verzije, skripte i runbookovi s
 
 | Dio | Status |
 | --- | --- |
-| Skripte za instalaciju (Nethermind 2.0.0 + Teku 26.9.1) | spremno, testirano na arm64 u test modu; čeka prvo pokretanje na i9 |
+| Skripte za instalaciju (Nethermind + Teku, verzije u `config/versions.env`) | spremno, testirano na arm64 u test modu; čeka prvo pokretanje na i9 |
 | launchd servisi, `gnosisctl` | spremno |
 | Payment listener | spremno, testirano protiv javnog Gnosis RPC-a |
 | RPC prema van (Cloudflare Tunnel + Worker) | dizajn u [docs/06](docs/06-rpc-exposure.md); Worker nije napisan |

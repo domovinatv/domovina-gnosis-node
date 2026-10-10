@@ -48,14 +48,14 @@ Klijent koji nije nadograđen prije fork epohe prestaje pratiti lanac, i RPC tad
 
 - Najave: [Gnosis forum](https://forum.gnosis.io/), [blog.validategnosis.com](https://blog.validategnosis.com/) i [gnosischain/configs](https://github.com/gnosischain/configs) (`*_FORK_EPOCH`).
 - Nadograditi barem **tjedan dana prije** forka.
-- Stanje 2026-10-01: zadnji fork je Fulu (2026-04-14), a sljedeći nije zakazan.
+- Stanje 2026-10-10: zadnji fork je Fulu (2026-04-14), a sljedeći nije zakazan.
 
-Koliko je verzija iznad minimuma za Fusaku:
+Koliko je verzija iznad minimuma za Fusaku (stanje 2026-10-10):
 
 | Klijent | Minimum za Fusaku | Zakucano ovdje |
 | --- | --- | --- |
-| Nethermind | 1.36.2 | 2.0.0 |
-| Teku | 26.4.0 | 26.9.1 |
+| Nethermind | 1.36.2 | 2.1.0 |
+| Teku | 26.4.0 | 26.10.0 |
 
 ✋ Pretplatiti se na GitHub release notifikacije za `NethermindEth/nethermind` i `Consensys/teku` (Watch → Custom → Releases).
 
