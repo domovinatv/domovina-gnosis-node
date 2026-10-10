@@ -106,8 +106,11 @@ render_service() {
       # Nethermind is a .NET single-file bundle that extracts native libraries
       # on start. The service user's home is /var/empty (read-only), so give it
       # a writable home and extraction dir, or it exits with code 159.
+      # UnfairSemaphoreSpinLimit=0: idle thread-pool workers block instead of
+      # spinning and calling sched_yield first. On the synced i9 that spinning
+      # kept Nethermind at ~1500% CPU (Nethermind PR #14162, not in 2.1.0).
       write_plist "$file" "$(label nethermind)" always 180 "$DATA_DIR/nethermind" \
-        "HOME=$GNOSIS_ROOT/state/nethermind;DOTNET_BUNDLE_EXTRACT_BASE_DIR=$GNOSIS_ROOT/state/nethermind/dotnet-bundle" -- \
+        "HOME=$GNOSIS_ROOT/state/nethermind;DOTNET_BUNDLE_EXTRACT_BASE_DIR=$GNOSIS_ROOT/state/nethermind/dotnet-bundle;DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0" -- \
         "$GNOSIS_ROOT/nethermind/current/nethermind" \
         -c gnosis \
         -dd "$DATA_DIR/nethermind" \

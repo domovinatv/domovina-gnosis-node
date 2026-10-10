@@ -198,6 +198,15 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - Mirovanje (00:31–00:48): mreža 4,9 Mbit/s down / 0,9 up, disk 9 MB/s, Teku 37 % CPU. Obrada novog bloka ~35 ms (`newPayload` ~12 ms prosjek).
 - **Nethermind nakon synca troši ~1.400–1.500 % CPU-a, od čega ~60 % sistemsko vrijeme**, i nakon 20 min se ne smiruje. Nema aktivne RocksDB kompakcije (LOG fajlovi), a u logu nema ništa osim obrade blokova. Stvarni posao je ~35 ms svakih 5 s, pa je ovo pozadinska petlja, a ne praćenje lanca. Uzrok se ne vidi bez `sudo sample <pid>` (proces radi kao `_gnosis`).
 
+### Uzrok visokog CPU-a: .NET thread-pool spin
+
+`sudo sample <pid> 5` (00:59):
+
+- Na vrhu stoga su `swtch_pri` (36 k uzoraka; to je `sched_yield` na macOS-u), `ThreadNative_SpinWait`, `cthread_yield`, `ObjHeader::EnterObjMonitorHelperSpin` i `Monitor_TryEnter`. Ostatak je `__psynch_cvwait`, odnosno niti koje uredno čekaju.
+- Spin je u 40 od 137 niti i gotovo sav u `.NET TP Worker` nitima (73 k od 74 k uzoraka).
+- To je Nethermind PR [#14162](https://github.com/NethermindEth/nethermind/pull/14162) (otvoren, nije u 2.1.0). .NET thread-pool niti koje ostanu bez posla se prije spavanja vrte i zovu `sched_yield`: default je 70 iteracija, a na Unixu .NET to udvostruči. Nethermindov pool naraste na više od 100 niti, pa spin pojede CPU.
+- Ispravak je ista postavka kao u PR-u, preko varijable okoline u plistu: `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0`. Ukloniti kad Nethermind izda verziju s #14162.
+
 ## Otvoreno
 
 - [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.
@@ -206,7 +215,8 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - [ ] Nakon receiptsa: `sudo scripts/30-services.sh install nethermind` za pomični prozor od 367 dana ([ADR-010](02-decisions.md#adr-010)), pa pratiti prvi prolaz brisanja (koliko blokova i GB).
 - [ ] Tjedan dana mjeriti rast `state` (bilo 146 GB u 22:25, 153 GB u 23:48), pa odlučiti o full pruning trigeru i upisati realnu procjenu trajanja diska.
 - [x] Old bodies i receipts do kraja (00:27:33). Promet i disk izmjereni.
-- [ ] **Nethermind ~1.500 % CPU nakon synca:** `sudo sample` pa uzrok. Ventilatori u mirovanju se mogu izmjeriti tek nakon toga.
+- [ ] **Nethermind ~1.500 % CPU nakon synca:** uzrok je thread-pool spin. Nakon restarta s `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0` izmjeriti CPU i ventilatore.
+- [ ] Ukloniti `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit` iz `30-services.sh` kad Nethermind izda verziju s PR #14162.
 - [ ] § 8 pravi restart (Wi-Fi bez logina!).
 - [ ] Nakon synca: port forward 30303 TCP/UDP, 9000 TCP/UDP i 9001 UDP ([ADR-009](02-decisions.md#adr-009)), pa usporediti EL/CL peerove i CPU prije i poslije. `--p2p-quic-port` je u plistu tek nakon `sudo scripts/30-services.sh install teku`; vrijednost je ista kao Tekuov default, pa nije hitno.
 - [ ] Očistiti root ostatke gpg-a u `~/.gnupg` i provjeriti GPG potpis Nethermind 2.1.0.
