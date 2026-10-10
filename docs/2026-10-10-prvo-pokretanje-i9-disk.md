@@ -214,15 +214,22 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - **Zamka: Nethermind epohu za `History.RetentionEpochs` računa kao 32 bloka.** Pruner je javio `Pruning historical blocks up to #36008506 (0 estimated)`. To je točno `head − 396360 × 32`, dakle dvije godine, a ne 367 dana. Gnosis ima 16 slotova po epohi, ali Nethermind 2.1.0 to ne uzima u obzir. Ispravno za 367 dana je **198.180** (32 × 5 s = 160 s po „epohi”).
 - Pruner je usput obrisao 10,4 M praznih block access lists (Glamsterdam struktura, na Gnosisu još nije aktivna).
 
+## Restart s 198.180 (01:35) i prvo brisanje povijesti
+
+- `sudo sample` #2 (01:33, prije restarta): `swtch_pri` je pao s ~36 k na ~3,5 k, pa je spin ispravak djelovao. Ostatak je lock contention: `EnterObjMonitorHelperSpin`, `Monitor_TryEnter` i `Monitor_Exit` u 37 `.NET TP Worker` niti. Koji lock, ne vidi se bez imena metoda, pa su dodani `diagtools`.
+- Start: 279 s.
+- Pruner u 01:40:10: `Completed block pruning up to #42350605. Reclaimed 4180854 heights.` Granica je točno 198.180 × 32 blokova ispod vrha, dakle 367 dana. Disk se oslobađa postupno, kroz RocksDB kompakciju.
+- Zamka: `sudo sample $(pgrep -f 'nethermind/current/nethermind') 5` je pogodio i proces pozadinskog praćenja (njegova naredba sadrži isti tekst). `sample` je drugi PID shvatio kao trajanje („for 92146 seconds”). Koristiti `pgrep -x nethermind`.
+
 ## Otvoreno
 
 - [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.
 - [x] § 6 servisi.
 - [x] § 7 stanje sinkronizirano (22:25), čvor prati vrh lanca.
-- [ ] Nakon receiptsa: `sudo scripts/30-services.sh install nethermind` za pomični prozor od 367 dana ([ADR-010](02-decisions.md#adr-010)), pa pratiti prvi prolaz brisanja (koliko blokova i GB).
+- [x] Pomični prozor od 367 dana uključen (01:35). Prvi prolaz je obrisao 4,18 M blokova. Koliko GB se vratilo, vidi se nakon kompakcije.
 - [ ] Tjedan dana mjeriti rast `state` (bilo 146 GB u 22:25, 153 GB u 23:48), pa odlučiti o full pruning trigeru i upisati realnu procjenu trajanja diska.
 - [x] Old bodies i receipts do kraja (00:27:33). Promet i disk izmjereni.
-- [ ] **Nethermind ~1.500 % CPU nakon synca:** uzrok je thread-pool spin. Nakon restarta s `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0` izmjeriti CPU i ventilatore.
+- [ ] **Nethermind ~530 % CPU nakon spin ispravka:** `gnosisctl dotnet-stack` pa uzrok lock contentiona. Zatim izmjeriti CPU i ventilatore u mirovanju.
 - [ ] Ukloniti `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit` iz `30-services.sh` kad Nethermind izda verziju s PR #14162.
 - [ ] § 8 pravi restart (Wi-Fi bez logina!).
 - [ ] Nakon synca: port forward 30303 TCP/UDP, 9000 TCP/UDP i 9001 UDP ([ADR-009](02-decisions.md#adr-009)), pa usporediti EL/CL peerove i CPU prije i poslije. `--p2p-quic-port` je u plistu tek nakon `sudo scripts/30-services.sh install teku`; vrijednost je ista kao Tekuov default, pa nije hitno.

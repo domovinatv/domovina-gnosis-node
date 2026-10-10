@@ -5,6 +5,8 @@
 #   gnosisctl health              sync, peers, head age, disk, clock (exit 1 if unhealthy)
 #   gnosisctl logs <service>      follow the service log
 #   gnosisctl start|stop|restart <service|all>
+#   gnosisctl dotnet-stack           managed stacks of every Nethermind thread
+#   gnosisctl dotnet-trace [secs]    CPU trace of Nethermind (default 30 s), speedscope file
 #
 # Services: nethermind teku lighthouse validator listener
 # stop all = validator, listener, CL, EL (reverse dependency order, clean DB shutdown).
@@ -172,6 +174,31 @@ cmd_restart() {
   done
 }
 
+# The .NET diagnostic tools reach Nethermind over a socket in the service
+# user's temp dir, so they run as that user with its TMPDIR.
+# Install: sudo scripts/20-install.sh diagtools
+dotnet_tool() {
+  local tool="$1"; shift
+  local bin="$GNOSIS_ROOT/tools/current/bin/$tool" pid tmp
+  [[ -x "$bin" ]] || die "$tool not installed: sudo scripts/20-install.sh diagtools"
+  pid="$(pgrep -x nethermind)" || die "nethermind is not running"
+  tmp="$(sudo -u "$SERVICE_USER" getconf DARWIN_USER_TEMP_DIR)"
+  sudo -u "$SERVICE_USER" env TMPDIR="$tmp" HOME="$GNOSIS_ROOT/state/nethermind" \
+    "$bin" "$@" --process-id "$pid"
+}
+
+cmd_dotnet_trace() {
+  local secs="${1:-30}" stamp out
+  stamp="$(date +%Y%m%d-%H%M%S)"
+  out="$GNOSIS_ROOT/state/nethermind/trace-$stamp"
+  log "CPU trace of nethermind for ${secs}s"
+  dotnet_tool dotnet-trace collect --format Speedscope \
+    --duration "$(printf '00:00:%02d:%02d' $((secs / 60)) $((secs % 60)))" --output "$out.nettrace"
+  sudo cp "$out.speedscope.json" "/tmp/nethermind-trace-$stamp.speedscope.json"
+  sudo chmod 644 "/tmp/nethermind-trace-$stamp.speedscope.json"
+  info "open /tmp/nethermind-trace-$stamp.speedscope.json at https://www.speedscope.app"
+}
+
 case "${1:-}" in
   status)  cmd_status ;;
   health)  cmd_health ;;
@@ -179,5 +206,7 @@ case "${1:-}" in
   start)   cmd_start "${2:-}" ;;
   stop)    cmd_stop "${2:-}" ;;
   restart) cmd_restart "${2:-}" ;;
-  *) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  dotnet-stack) dotnet_tool dotnet-stack report ;;
+  dotnet-trace) cmd_dotnet_trace "${2:-}" ;;
+  *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac

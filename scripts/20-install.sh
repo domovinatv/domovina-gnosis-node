@@ -5,7 +5,7 @@
 #   sudo scripts/20-install.sh                 # everything the config needs
 #   sudo scripts/20-install.sh nethermind      # one component (e.g. upgrade)
 #
-# Components: nethermind teku jre node listener cloudflared
+# Components: nethermind teku jre node listener cloudflared diagtools
 # Installing a new version does not restart anything; use gnosisctl restart.
 # Rollback: sudo ln -sfn <old-version> /opt/gnosis/<component>/current
 
@@ -107,6 +107,31 @@ install_cloudflared() {
   info "service setup is manual, see docs/06-rpc-exposure.md"
 }
 
+install_diagtools() {
+  # .NET runtime + dotnet-stack/dotnet-trace, for looking inside Nethermind.
+  # Not installed by default: sudo scripts/20-install.sh diagtools
+  local v="$DOTNET_DIAG_TOOLS_VERSION" rt="$DOTNET_DIAG_RUNTIME_VERSION" dir file t sum
+  dir="$(version_dir tools "$v-rt$rt")"
+  log "diagnostic tools $v (.NET runtime $rt)"
+  file="dotnet-runtime-$rt-osx-x64.tar.gz"
+  fetch "https://builds.dotnet.microsoft.com/dotnet/Runtime/$rt/$file" "$file" "$DOTNET_DIAG_RUNTIME_SHA256"
+  rm -rf "$dir"; mkdir -p "$dir/runtime" "$dir/bin"
+  tar --no-same-owner -xzf "$CACHE_DIR/$file" -C "$dir/runtime"
+  for t in dotnet-stack dotnet-trace; do
+    if [[ "$t" == dotnet-stack ]]; then sum="$DOTNET_STACK_SHA256"; else sum="$DOTNET_TRACE_SHA256"; fi
+    file="$t.$v.nupkg"
+    fetch "https://api.nuget.org/v3-flatcontainer/$t/$v/$file" "$file" "$sum"
+    unzip -q "$CACHE_DIR/$file" 'tools/net8.0/any/*' -d "$dir/$t.tmp"
+    mv "$dir/$t.tmp/tools/net8.0/any" "$dir/$t"; rm -rf "$dir/$t.tmp"
+    printf '#!/bin/sh\nDOTNET_ROOT="%s" exec "%s/dotnet" "%s" "$@"\n' \
+      "$GNOSIS_ROOT/tools/current/runtime" "$GNOSIS_ROOT/tools/current/runtime" \
+      "$GNOSIS_ROOT/tools/current/$t/$t.dll" > "$dir/bin/$t"
+    chmod 755 "$dir/bin/$t"
+  done
+  unquarantine "$dir"
+  activate_version tools "$v-rt$rt"
+}
+
 components=("$@")
 if [[ ${#components[@]} -eq 0 ]]; then
   components=(nethermind)
@@ -116,7 +141,7 @@ fi
 
 for c in "${components[@]}"; do
   case "$c" in
-    nethermind|teku|jre|node|listener|cloudflared) "install_$c" ;;
+    nethermind|teku|jre|node|listener|cloudflared|diagtools) "install_$c" ;;
     lighthouse) die "lighthouse is built from source: scripts/25-build-lighthouse.sh" ;;
     *) die "unknown component: $c" ;;
   esac

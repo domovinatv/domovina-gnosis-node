@@ -98,6 +98,21 @@ Zašto prvo `stop all`: launchd pri gašenju sustava ne mora poštovati `ExitTim
 | Disk se puni | `du -sh /opt/gnosis/data/*`; nakon toga Nethermind full pruning ([docs](https://docs.nethermind.io/fundamentals/pruning)), samo na trie backendu |
 | Sat odstupa > 100 ms | `sntp time.cloudflare.com`; razmisliti o chronyju |
 
+## Dijagnostika Netherminda (.NET) {#dijagnostika}
+
+Kad Nethermind troši CPU, a ne vidi se zašto, `sudo sample <pid>` pokazuje samo nativne funkcije. JIT-kompilirani kod vidi kao `???`. Imena metoda daju .NET alati:
+
+```bash
+sudo scripts/20-install.sh diagtools   # jednom: .NET runtime + dotnet-stack/dotnet-trace u /opt/gnosis/tools
+scripts/gnosisctl dotnet-stack         # managed stog svih niti, sa imenima metoda
+scripts/gnosisctl dotnet-trace 30      # CPU trace 30 s → /tmp/nethermind-trace-*.speedscope.json
+```
+
+- Trace se otvara na <https://www.speedscope.app> (fajl se učitava lokalno u browser, ništa se ne šalje).
+- Alati se spajaju preko socketa u temp diru korisnika `_gnosis`, pa ih `gnosisctl` pokreće kao `_gnosis` (`sudo -u`).
+- Za `sample` koristiti `pgrep -x nethermind`, nikad `pgrep -f …nethermind…`. `-f` pogađa i druge procese čija naredba sadrži taj tekst, a `sample` onda drugi PID shvati kao trajanje.
+- Nethermind je release build. Debug build iz izvornog koda mijenja tajming i ne pokazuje isti problem.
+
 ## Dnevnik
 
 Ovdje kronološki upisivati događaje na čvoru: instalaciju, upgradeove, ispade i promjene konfiguracije.
@@ -112,3 +127,4 @@ Ovdje kronološki upisivati događaje na čvoru: instalaciju, upgradeove, ispade
 | 2026-10-10 | 22:25: stanje sinkronizirano za 4 h 13 min (snap, 4–8 EL peerova, Wi-Fi, bez port forwarda). Čvor prati vrh lanca, Teku nije optimistic. Baza ~166 GB. Povijest (bodies/receipts) u tijeku. [Detalji](2026-10-10-prvo-pokretanje-i9-disk.md#sinkronizacija-stanje-gotovo-4-h-13-min) |
 | 2026-10-10 | 23:27: restart Nethermind s granicom povijesti 42.550.000 ([ADR-010](02-decisions.md#adr-010)). Start nakon restarta traje ~4,5 min (otvaranje baze). Old Receipts samo za zadnju godinu, procjena ~90 GB. [Detalji](2026-10-10-prvo-pokretanje-i9-disk.md#restart-s-adr-010-2327) |
 | 2026-10-11 | 00:27:33: **sync gotov** (ukupno 6 h 15 min). Baza 304 GB, slobodno 227 GiB. Mreža i disk u mirovanju niski, ali Nethermind i dalje ~1.500 % CPU (60 % sys), uzrok otvoren. [Detalji](2026-10-10-prvo-pokretanje-i9-disk.md#sync-gotov-2026-10-11-002733) |
+| 2026-10-11 | 01:02 i 01:35: restarti. Nethermind CPU s ~1.500 % na ~530 % uz `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0` (thread-pool spin, PR #14162). Ostatak je lock contention u 37 thread-pool niti, uzrok otvoren. Pomični prozor: `RetentionEpochs` se računa po 32 bloka, ispravno 198.180 = 367 dana. Pruner obrisao 4.180.854 blokova (do #42.350.605). Dodani `diagtools` (`gnosisctl dotnet-stack|dotnet-trace`). |
