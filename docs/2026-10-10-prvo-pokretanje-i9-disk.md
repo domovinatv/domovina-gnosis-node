@@ -62,6 +62,26 @@ Slobodno ostaje **534 GiB (~574 GB)**. `00-preflight.sh` za raspon 500–700 GB 
 
 - **`df -h` pokazuje GiB, `diskutil` GB.** 534 Gi u `df` i „573.9 GB not allocated” u `diskutil apfs list` su ista brojka.
 
+## Prva instalacija je namjerni test u lošijim uvjetima
+
+Cilj prve instalacije je dokazati da čvor radi i bez idealnih uvjeta. Dva odstupanja od [runbooka](04-install-runbook.md) i [docs/03](03-macbook-host.md) su svjesna:
+
+| Uvjet | Preporuka | Test |
+| --- | --- | --- |
+| Slobodan disk | ≥ 700 GB | ~534 GiB, smije pasti do ~500 GB |
+| Mreža | USB-C Gigabit Ethernet | Wi-Fi |
+
+Wi-Fi je izmjeren 2026-10-10 (Speedtest, Optima Telekom, server HT Zagreb): **428 Mbps down, 424 Mbps up, ping 4 ms**. Pod opterećenjem ping raste na 91 ms (down) i 34 ms (up).
+
+Dugoročno je plan kabel i dodatne optimizacije. Ako čvor sinkronizira i radi u ovim uvjetima, s kabelom će raditi tim bolje.
+
+Što izmjeriti tijekom testa i upisati ovdje:
+
+- trajanje synca za Teku (checkpoint) i Nethermind (snap);
+- slobodan disk na početku, u vrhuncu i nakon synca;
+- broj peerova za EL i CL te prekide Wi-Fi veze tijekom synca;
+- spaja li se Wi-Fi nakon pravog restarta **bez logina** (runbook § 8). Ovo je za Wi-Fi glavni rizik: mreža mora biti spremljena na razini sustava, a ne samo za korisnika.
+
 ## Otvoreno
 
 - [ ] Instalacija: `scripts/00-preflight.sh`, pa `sudo scripts/10-host-setup.sh` i dalje po [runbooku](04-install-runbook.md).
