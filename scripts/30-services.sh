@@ -94,7 +94,11 @@ render_service() {
   file="$dir/$(label "$svc").plist"
   case "$svc" in
     nethermind)
-      write_plist "$file" "$(label nethermind)" always 180 "$DATA_DIR/nethermind" "" -- \
+      # Nethermind is a .NET single-file bundle that extracts native libraries
+      # on start. The service user's home is /var/empty (read-only), so give it
+      # a writable home and extraction dir, or it exits with code 159.
+      write_plist "$file" "$(label nethermind)" always 180 "$DATA_DIR/nethermind" \
+        "HOME=$GNOSIS_ROOT/state/nethermind;DOTNET_BUNDLE_EXTRACT_BASE_DIR=$GNOSIS_ROOT/state/nethermind/dotnet-bundle" -- \
         "$GNOSIS_ROOT/nethermind/current/nethermind" \
         -c gnosis \
         -dd "$DATA_DIR/nethermind" \
@@ -198,7 +202,7 @@ enabled_services() {
 # Directories the services write into, owned by the service user.
 prepare_dirs() {
   local svc="$1" d
-  for d in "$DATA_DIR/$svc" "$LOG_DIR/$svc"; do
+  for d in "$DATA_DIR/$svc" "$LOG_DIR/$svc" "$GNOSIS_ROOT/state/$svc"; do
     mkdir -p "$d"; svc_own "$d"; chmod 750 "$d"
   done
 }

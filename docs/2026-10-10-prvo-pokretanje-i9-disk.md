@@ -123,7 +123,19 @@ Zamke:
 - **Naredba zalijepljena u iTerm se nije izvršila**, a ekran je izgledao kao da nešto radi (samo prazni redovi). Provjera je `ps` (ima li `sudo`/`tee` ispod shella tog taba) i postoji li log fajl, jer `tee` ga stvara odmah, i prije `sudo` lozinke.
 - **`sudo` na macOS-u zadržava `HOME`.** gpg je zato kao root koristio `/Users/ms/.gnupg`: ostavio je root-owned `crls.d` i `S.dirmngr` te pokrenuo `dirmngr` kao root. Nakon toga ni gpg korisnika `ms` nije mogao do keyservera (`No dirmngr`). Ispravljeno je tako da `20-install.sh` pokreće gpg kao `$SUDO_USER` (`sudo -u … -H`), pa koristi admin keyring u koji runbook § 5 uvozi Nethermindov ključ.
 
-## Otvoreno
+## Servisi (`30-services.sh install`)
+
+Pokrenuto 2026-10-10 u 18:08. Oba plista su učitana bez greške.
+
+- **Teku** se pokrenuo i za oko minutu povukao checkpoint stanje (head slot 30531008). Nakon toga čeka EL: `EXECUTION_CLIENT_OFFLINE`, „Beacon chain syncing complete, waiting for Execution Client”. Ovo je očekivano.
+- **Nethermind se rušio u petlji** (`last exit 159`, `spawn scheduled`), a u `nethermind.stderr.log` je pisalo:
+  ```
+  Default extraction directory [/private/var/empty] either doesn't exist or is not accessible for read/write.
+  DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set, and a read-write cache directory couldn't be created.
+  ```
+  Nethermind je .NET single-file bundle i pri startu raspakira ugrađene native biblioteke u `$HOME`. Home korisnika `_gnosis` je `/var/empty`, u koji se ne može pisati. Test na arm64 ovo nije mogao uhvatiti, jer je tamo Nethermind radio kao obični korisnik.
+  **Ispravak:** plist sada postavlja `HOME=/opt/gnosis/state/nethermind` i `DOTNET_BUNDLE_EXTRACT_BASE_DIR=…/dotnet-bundle`, a `30-services.sh` stvara `state/<servis>` u vlasništvu `_gnosis`. Raspakirane biblioteke tako pripadaju servisnom korisniku, a ne rootu. To je malo odstupanje od [ADR-004](02-decisions.md#adr-004), jer binariji iz zipa ostaju root-owned.
+
 
 - [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.
 - [ ] § 6 servisi i § 7 sync po [runbooku](04-install-runbook.md).
