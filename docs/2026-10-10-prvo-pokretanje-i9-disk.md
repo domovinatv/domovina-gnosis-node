@@ -181,6 +181,15 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - 23:21: najstarije preuzeto tijelo je blok ~39.956.500 (2025-05-08). Receipts postoje samo od 22:25.
 - Odluka: povijest samo od bloka 42.550.000 (2025-10-10), [ADR-010](02-decisions.md#adr-010). Za taj broj bloka se ne treba pouzdati u „5 s po bloku”: prosjek je bio ~5,2 s, pa je blok traženi preko `eth_getBlockByNumber` i `timestamp`.
 
+## Restart s ADR-010 (23:27)
+
+- `sudo scripts/30-services.sh install nethermind` u 23:27. Stari proces se ugasio u 23:27:25.
+- **Novi proces je šutio u logu ~4,5 min** (23:27:35 → 23:31:54), uz ~93 % CPU-a, dok je otvarao bazu od ~250 GB. Na prvom startu je baza bila prazna, pa se to nije vidjelo. Ovo nije zastoj: pri restartu pričekati barem 5 minuta prije zaključka.
+- `State sync unnecessary - already have state`: snap se ne ponavlja ([ADR-002](02-decisions.md#adr-002)). Za 4,5 min propuštenih blokova je sustigao odmah.
+- Barrier je pročitan (`Sync.AncientBodiesBarrier = "0x28942f0"` = 42.550.000). Bodies su odmah gotovi. **Old Receipts** kreću s 6.140.906 blokova, točno od pivota do granice.
+- **Receipts na disku su manji nego što prva brojka sugerira.** U 23:35 je bilo 7,9 GB za 131 k blokova (~58 KB/blok), a u 23:40 4,7 GB za 325 k blokova (~15 KB/blok), zbog RocksDB kompakcije i `Receipt.CompactReceiptStore`. Projekcija za godinu je ~90 GB. Ne zaključivati o disku iz prvih minuta pisanja.
+- **Lookup transakcije po hashu treba receipts.** `eth_getTransactionByHash` je za transakciju iz bloka 48.654.130 vraćao `null`, iako je tijelo bloka bilo lokalno: `eth_getTransactionByBlockNumberAndIndex` ju je vratio. Nethermind indeks hash → blok gradi zajedno s receiptsima. Kad su Old Receipts stigli do tog bloka (2 min kasnije), radili su i lookup po hashu i receipt.
+
 ## Otvoreno
 
 - [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.
