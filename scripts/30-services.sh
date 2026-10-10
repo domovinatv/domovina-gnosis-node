@@ -94,6 +94,11 @@ render_service() {
   file="$dir/$(label "$svc").plist"
   case "$svc" in
     nethermind)
+      # FilterPeersByRecentIp=false: in 2.1.0 a candidate rejected by the
+      # recent-IP filter is re-selected at once, and with few peers (no
+      # inbound) PeerManager loops on it: ~460% CPU on the i9, measured with
+      # dotnet-trace. Fixed by Nethermind PR #14190 (after 2.1.0); remove this
+      # flag when upgrading to a release that contains it.
       local nm_extra=()
       if [[ -n "${NM_HISTORY_FROM_BLOCK:-}" ]]; then
         nm_extra+=(--Sync.AncientBodiesBarrier "$NM_HISTORY_FROM_BLOCK"
@@ -130,6 +135,7 @@ render_service() {
         --Network.MaxActivePeers "$NM_MAX_PEERS" \
         --Network.P2PPort "$EL_P2P_PORT" \
         --Network.DiscoveryPort "$EL_P2P_PORT" \
+        --Network.FilterPeersByRecentIp false \
         ${nm_extra[@]+"${nm_extra[@]}"}
       ;;
     teku)

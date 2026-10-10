@@ -221,6 +221,13 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - Pruner u 01:40:10: `Completed block pruning up to #42350605. Reclaimed 4180854 heights.` Granica je točno 198.180 × 32 blokova ispod vrha, dakle 367 dana. Disk se oslobađa postupno, kroz RocksDB kompakciju.
 - Zamka: `sudo sample $(pgrep -f 'nethermind/current/nethermind') 5` je pogodio i proces pozadinskog praćenja (njegova naredba sadrži isti tekst). `sample` je drugi PID shvatio kao trajanje („for 92146 seconds”). Koristiti `pgrep -x nethermind`.
 
+## Ostatak CPU-a: PeerManager petlja (dotnet-stack, dotnet-trace)
+
+- `gnosisctl dotnet-stack` (01:44): od niti koje troše CPU, jedini Nethermind kod je `PeerManager`: `EnsureAvailableActivePeerSlotAsync` na `Monitor.Enter_Slowpath`, `QueueRemainingCandidates`, `SetupOutgoingPeerConnection` i `RunPeerUpdateLoop`.
+- `gnosisctl dotnet-trace 30` (01:47): managed CPU je bio 464 % jedne jezgre. Raspodjela: PeerManager izravno 25 %, thread pool (buđenje niti, `MaybeAddWorkingWorker`, `PollGC`) ~42 %, finalizer nit 15 %, lock na kanalu peer petlje 8 %. **Blokovi, EVM i RPC su zajedno ~2 %.**
+- Uzrok je Nethermind PR [#14190](https://github.com/NethermindEth/nethermind/pull/14190) („Back off peer candidates rejected by the contact filter”), spojen 2026-10-03, nakon 2.1.0. Kandidata kojeg odbije filtar nedavnih IP adresa (`ShouldContactPeer` → `RlpxHost.ShouldContact`) Nethermind odmah ponovno bira. Autori su izmjerili 113 CPU-s u 62 s. Kod nas je jače, jer je 8 od 50 mjesta zauzeto (nema dolaznih veza), pa petlja stalno ima slobodna mjesta.
+- Privremeno: `--Network.FilterPeersByRecentIp false`. Ukloniti uz upgrade na verziju s #14190. Da to gasi petlju, zaključeno je iz koda PR-a, a provjerava se mjerenjem nakon restarta.
+
 ## Otvoreno
 
 - [x] Instalacija do § 5: preflight, `10-host-setup.sh`, `20-install.sh`.
@@ -229,8 +236,8 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 - [x] Pomični prozor od 367 dana uključen (01:35). Prvi prolaz je obrisao 4,18 M blokova. Koliko GB se vratilo, vidi se nakon kompakcije.
 - [ ] Tjedan dana mjeriti rast `state` (bilo 146 GB u 22:25, 153 GB u 23:48), pa odlučiti o full pruning trigeru i upisati realnu procjenu trajanja diska.
 - [x] Old bodies i receipts do kraja (00:27:33). Promet i disk izmjereni.
-- [ ] **Nethermind ~530 % CPU nakon spin ispravka:** `gnosisctl dotnet-stack` pa uzrok lock contentiona. Zatim izmjeriti CPU i ventilatore u mirovanju.
-- [ ] Ukloniti `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit` iz `30-services.sh` kad Nethermind izda verziju s PR #14162.
+- [ ] **Nethermind ~460 % CPU (PeerManager petlja, #14190):** restart s `FilterPeersByRecentIp=false`, pa izmjeriti CPU i ventilatore u mirovanju.
+- [ ] Kad izađe Nethermind s #14162 i #14190: upgrade, a iz `30-services.sh` ukloniti `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit` i `--Network.FilterPeersByRecentIp false`.
 - [ ] § 8 pravi restart (Wi-Fi bez logina!).
 - [ ] Nakon synca: port forward 30303 TCP/UDP, 9000 TCP/UDP i 9001 UDP ([ADR-009](02-decisions.md#adr-009)), pa usporediti EL/CL peerove i CPU prije i poslije. `--p2p-quic-port` je u plistu tek nakon `sudo scripts/30-services.sh install teku`; vrijednost je ista kao Tekuov default, pa nije hitno.
 - [ ] Očistiti root ostatke gpg-a u `~/.gnupg` i provjeriti GPG potpis Nethermind 2.1.0.
