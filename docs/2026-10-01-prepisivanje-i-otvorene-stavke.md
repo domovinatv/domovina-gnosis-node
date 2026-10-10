@@ -60,4 +60,5 @@ Nijedan od ovih problema ne bi javio grešku pri pokretanju. Čvor bi se jednost
 
 - [docs/04-install-runbook.md](04-install-runbook.md): postupak na i9
 - [docs/02-decisions.md](02-decisions.md): ADR-001 do ADR-008
+- [2026-10-10 — prvi preflight na i9, čišćenje diska](2026-10-10-prvo-pokretanje-i9-disk.md)
 - [docs/research/](research/): sirovi nalazi s izvorima

@@ -99,7 +99,7 @@ docs/research/             sirovi istraživački nalazi s izvorima (2026-10-01)
 8. [Validator](docs/08-validator.md): ključevi, depozit, rad, izlaz
 9. [Sigurnost i model prijetnji](docs/09-security.md)
 
-Dnevnik rada: [2026-10-01 — prepisivanje, zamke, otvorene stavke za i9](docs/2026-10-01-prepisivanje-i-otvorene-stavke.md)
+Dnevnik rada: [2026-10-01 — prepisivanje, zamke, otvorene stavke za i9](docs/2026-10-01-prepisivanje-i-otvorene-stavke.md), [2026-10-10 — prvi preflight na i9, čišćenje diska](docs/2026-10-10-prvo-pokretanje-i9-disk.md)
 
 ## Pravila
 
