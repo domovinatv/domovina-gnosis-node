@@ -105,4 +105,4 @@ Ovdje kronološki upisivati događaje na čvoru: instalaciju, upgradeove, ispade
 | Datum | Događaj |
 | --- | --- |
 | 2026-10-01 | Repo prepisan od nule (Claude Code), čvor još nije instaliran |
-| 2026-10-10 | Prvi `00-preflight.sh` na i9: sve OK osim diska (226 GB slobodno). Disk očišćen na 534 GB, instalacija još nije krenula. [Detalji](2026-10-10-prvo-pokretanje-i9-disk.md) |
+| 2026-10-10 | Prvi `00-preflight.sh` na i9: sve OK osim diska (226 GB slobodno). Disk očišćen na 534 GB. Odluka: instalacija kreće s tim diskom, čišćenje po potrebi tijekom synca. [Detalji](2026-10-10-prvo-pokretanje-i9-disk.md) |

@@ -1,6 +1,6 @@
 # 2026-10-10 — Prvi preflight na i9 i čišćenje diska
 
-Prvi put je repo pokrenut na ciljnom stroju. Instalacija još nije krenula, jer je preflight pao na disku.
+Prvi put je repo pokrenut na ciljnom stroju. Instalacija još nije krenula, jer je preflight pao na disku. Nakon čišćenja odlučeno je krenuti s 534 GiB (vidi drugi krug).
 
 ## Stroj (izmjereno)
 
@@ -43,12 +43,32 @@ Obrisano iz `stepanic`: Xcode, CoreSimulator, Android, `.android`, sadržaj Down
 - **`~/Library/Containers/*` ne briše ni root** (`Operation not permitted`). Terminal treba Full Disk Access (System Settings → Privacy & Security).
 - **Docker Desktop je bio pokrenut** na `ms`. Čvor ga ne koristi ([ADR](02-decisions.md)), a njegov VM troši RAM.
 
+## Drugi krug: Docker na `stepanic` i odluka
+
+iTerm je dobio Full Disk Access. Provjera: `ls "/Library/Application Support/com.apple.TCC"` prolazi bez `Operation not permitted`.
+
+Docker podaci na `stepanic` nisu oslobodili ništa:
+
+- `~/Library/Containers/com.docker.docker` više nije postojao (`No such file or directory`). Obrisan je u prvom krugu ili je procjena od 57 GB bila prividna veličina sparse `Docker.raw`. Ovo nije provjereno.
+- Obrisan je `/Users/stepanic/.docker` (44 KB).
+- Nema Docker procesa, pa ni otvorenog fajla koji drži obrisani prostor. Nema ni lokalnih Time Machine snapshotova.
+- Na `ms` je Docker.app već uklonjen. Ostali su `/Library/LaunchDaemons/com.docker.{socket,vmnetd}.plist`, helperi u `/Library/PrivilegedHelperTools/` i symlinkovi u `/usr/local/bin/docker*`. Ne zauzimaju prostor.
+
+Slobodno ostaje **534 GiB (~574 GB)**. `00-preflight.sh` za raspon 500–700 GB daje upozorenje, ne pad.
+
+**Odluka:** instalacija kreće s ovim diskom, bez daljnjeg čišćenja. Prostor se po potrebi oslobađa kasnije, dok sync radi (vidi Otvoreno). Procjena za sync je ~509 GB za Nethermind i ~10 GB za Teku, dakle rezerva je mala i disk treba pratiti.
+
+### Zamka
+
+- **`df -h` pokazuje GiB, `diskutil` GB.** 534 Gi u `df` i „573.9 GB not allocated” u `diskutil apfs list` su ista brojka.
+
 ## Otvoreno
 
-- [ ] Do preporučenih 700 GB fali oko 165 GB. Dvije opcije: obrisati cijeli račun `stepanic` (Users & Groups → Delete User; procjena +110 GB) i/ili s `ms` ukloniti Docker.app i njegov kontejner, `~/Library/Developer/CoreSimulator`, Xcode.app (CLT ostaju), Android Studio, FlutterFlow, `fvm`, `.pub-cache`, `.cocoapods` i instalere iz Downloads (procjena do +90 GB). `.nvm` ostaje, jer listener treba Node 22+.
+- [ ] Instalacija: `scripts/00-preflight.sh`, pa `sudo scripts/10-host-setup.sh` i dalje po [runbooku](04-install-runbook.md).
+- [ ] Disk pratiti tijekom synca. Ako slobodno padne ispod ~50 GB, slijedi čišćenje: obrisati račun `stepanic` (procjena +110 GB) i/ili s `ms` ukloniti `~/Library/Developer/CoreSimulator`, Xcode.app (CLT ostaju), Android Studio, FlutterFlow, `fvm`, `.pub-cache`, `.cocoapods` i instalere iz Downloads. `.nvm` ostaje, jer listener treba Node 22+.
 - [ ] Prije brisanja računa `stepanic` provjeriti nepushane commitove u `/Users/stepanic/git` (31 GB).
 - [ ] `~/thermal-backup` (root, rujan 2026: backup LaunchAgents/Daemons, „server-mode”) **ne brisati** dok se ne zna što je.
-- [ ] Nakon čišćenja: `scripts/00-preflight.sh`, pa `sudo scripts/10-host-setup.sh` po [runbooku](04-install-runbook.md).
+- [ ] Ostaci Docker Desktopa: `sudo launchctl bootout system/com.docker.{vmnetd,socket}`, pa obrisati plistove, helpere i `/usr/local/bin/docker*`. Nije hitno.
 
 ## Vezani dokumenti
 
