@@ -5,7 +5,7 @@
 | Komponenta | Što radi | Proces | Port(ovi) |
 | --- | --- | --- | --- |
 | **Nethermind 2.0** (EL) | izvršava blokove, drži stanje, služi JSON-RPC | `/opt/gnosis/nethermind/current/nethermind` | 8545 HTTP, 8546 WS, 8551 Engine (svi 127.0.0.1); 30303 TCP/UDP P2P |
-| **Teku 26.x** (CL beacon node) | konsenzus, prati beacon chain, vodi EL kroz Engine API | `java … tech.pegasys.teku.Teku` | 5052 REST, 8008 metrics (127.0.0.1); 9000 TCP/UDP P2P |
+| **Teku 26.x** (CL beacon node) | konsenzus, prati beacon chain, vodi EL kroz Engine API | `java … tech.pegasys.teku.Teku` | 5052 REST, 8008 metrics (127.0.0.1); 9000 TCP/UDP P2P, 9001 UDP QUIC |
 | **Teku validator client** (kasnije) | potpisuje atestacije i blokove za 1 validator | `java … Teku validator-client` | 8009 metrics (127.0.0.1) |
 | **Payment listener** | prati uplate na adrese korisnika, šalje evente Workeru | `node listener.mjs` | — (samo odlazno) |
 | **cloudflared** (kasnije) | odlazni tunel do Cloudflarea za RPC | `cloudflared` | — (samo odlazno) |
@@ -78,7 +78,7 @@ launchd ne zna za ovisnosti između servisa. Svaki klijent sam ponavlja spajanje
 ## Mreža
 
 - Svi RPC/REST/metrics portovi vežu se na `127.0.0.1`.
-- Na routeru **nema port forwardinga**. P2P veze su samo odlazne, pa je peera nešto manje i češće se mijenjaju. Za praćenje lanca i za jednog validatora to je dovoljno ([istraživanje](research/2026-10-01-macos-ops.md)).
+- Na routeru se forwardaju **samo P2P portovi** (30303 TCP/UDP, 9000 TCP/UDP, 9001 UDP), [ADR-009](02-decisions.md#adr-009). Bez forwarda P2P radi samo odlaznim vezama: čvor radi, ali s manje peerova (na i9 4–5 EL peerova).
 - UPnP je isključen: Nethermind ga ima isključenog po defaultu, a Teku dobiva `--p2p-nat-method=NONE`.
 - Promet prema van:
   - P2P;

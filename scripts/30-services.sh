@@ -134,6 +134,7 @@ render_service() {
         --rest-api-interface=127.0.0.1 \
         --rest-api-port="$CL_HTTP_PORT" \
         --p2p-port="$CL_P2P_PORT" \
+        --p2p-quic-port="${CL_QUIC_PORT:-9001}" \
         --p2p-peer-upper-bound="$CL_MAX_PEERS" \
         --p2p-nat-method=NONE \
         --metrics-enabled=true \

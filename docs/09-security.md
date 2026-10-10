@@ -14,7 +14,7 @@
 ## Površine napada
 
 - **Mreža.**
-  - Dolazno nema ništa: nema port forwardinga, a firewall je uključen.
+  - Dolazno su otvoreni samo P2P portovi (30303, 9000, 9001), [ADR-009](02-decisions.md#adr-009). RPC, Engine API i REST nisu dostupni izvana. Firewall je uključen.
   - Sve lokalne usluge su na 127.0.0.1.
   - P2P je javan po definiciji: napadač može otkriti da na IP-u ureda radi Gnosis čvor.
 - **RPC preko tunela.**

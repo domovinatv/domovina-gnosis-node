@@ -154,3 +154,38 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 
 - Notifikacija kasni 10–15 s, a ne „1 s” kako je bilo obećano.
 - xDAI koji šalje ugovor (internal transfer) se ne vidi bez `trace_*` metoda. Vidi [docs/07](07-wallet-notifications.md#ograničenja).
+
+---
+
+## ADR-009: P2P ingress da, RPC ingress ne {#adr-009}
+
+**Kontekst** (izmjereno na i9, 2026-10-10, [dnevnik](2026-10-10-prvo-pokretanje-i9-disk.md#sinkronizacija-prvi-sat)):
+
+- Bez port forwardinga Nethermind je prvih sat i pol imao **4–5 EL peerova**, a snap sync je dobivao samo dio njih. Teku je na istoj mreži imao 11–14 CL peerova.
+- Nethermind ispravno prepoznaje javnu IPv4 adresu, pa odlazne veze rade. Drugi nodovi se ne mogu spojiti na njega.
+- [ADR-005](#adr-005) „zero ingress” je pisan za **RPC**: sirovi JSON-RPC ne smije biti dostupan izvana. P2P je druga stvar. Protokol je enkriptiran, napravljen za javni internet, i očekuje da ga peerovi mogu dosegnuti.
+- Cloudflare Tunnel ne može nositi P2P. Peerovi dolaze izravno na IP i port iz enode/ENR zapisa, preko TCP-a i UDP-a (discovery), a ne preko `cloudflared`.
+- Ured ima statičnu javnu IPv4 adresu.
+
+**Odluka.**
+
+- Na routeru se ručno forwardaju **samo P2P portovi**, s istim vanjskim i unutarnjim brojem:
+
+  | Port | Protokol | Klijent | Config |
+  | --- | --- | --- | --- |
+  | 30303 | TCP + UDP | Nethermind (devp2p + discovery) | `EL_P2P_PORT` |
+  | 9000 | TCP + UDP | Teku (libp2p + discv5) | `CL_P2P_PORT` |
+  | 9001 | UDP | Teku (QUIC) | `CL_QUIC_PORT` |
+
+- RPC (8545/8546), Engine API (8551), REST (5052) i metrics ostaju vezani na `127.0.0.1`. Izvana idu samo kroz tunel i Worker ([ADR-005](#adr-005)).
+- Nema UPnP-a (`--p2p-nat-method=NONE`). Ručni forward je vidljiv i stabilan, a UPnP dopušta bilo kojem programu u LAN-u da otvara portove.
+- Forward se uključuje **nakon** prve sinkronizacije. Prvi sync je namjerni test u lošijim uvjetima, a usporedba prije i poslije je i mjerenje koje vrijedi zapisati.
+
+**Posljedice.**
+
+- Više peerova, stabilnija veza i doprinos mreži: drugi nodovi mogu sinkronizirati s nas.
+- Nakon synca čvor služi podatke peerovima, pa malo rastu upload i CPU. Gornja granica je `NM_MAX_PEERS` i `CL_MAX_PEERS`.
+- IP ureda je javno vezan uz Gnosis čvor. To je i bez forwarda bio slučaj ([docs/09](09-security.md)), jer odlazni P2P objavljuje istu adresu.
+- **Više nodova iza iste IP adrese** je moguće. Svaki dobiva svoje portove (npr. 30304/9002/9003) i svoja pravila na routeru. Vanjski port mora biti jednak unutarnjem, jer node objavljuje port na kojem sluša. Inače treba postaviti advertised portove (Teku `--p2p-advertised-port`, `--p2p-advertised-udp-port`, `--p2p-advertised-quic-port`).
+- Na Macu treba provjeriti da application firewall pušta `nethermind` i `java` (`socketfilterfw --listapps`: „Allow incoming connections”). Na i9 je to već slučaj.
+

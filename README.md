@@ -68,7 +68,7 @@ flowchart LR
   W2 --> APP
 ```
 
-Na routeru nema port forwardinga: sav promet prema Cloudflareu je odlazan.
+Prema Cloudflareu je sav promet odlazan. Na routeru se forwardaju samo P2P portovi, nikad RPC ([ADR-009](docs/02-decisions.md#adr-009)).
 
 ## Karta repozitorija
 

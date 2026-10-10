@@ -94,7 +94,7 @@ com.apple.commerce AutoUpdate=false
 
 ## Firewall
 
-`10-host-setup.sh` uključuje application firewall i stealth mode. Firewall filtrira samo dolazne veze. Kako na routeru nema port forwardinga, P2P ionako radi samo odlaznim vezama.
+`10-host-setup.sh` uključuje application firewall i stealth mode. Firewall filtrira samo dolazne veze. Za P2P ingress ([ADR-009](02-decisions.md#adr-009)) `nethermind` i `java` moraju imati „Allow incoming connections” (`/usr/libexec/ApplicationFirewall/socketfilterfw --listapps`).
 
 ## Background Task Management {#background-task-management}
 
@@ -120,4 +120,4 @@ Validator treba sat točan na manje od 0,5 s, a poželjno ispod 100 ms. macOS `t
 
 - ✋ Za prvu sinkronizaciju koristiti USB-C Gigabit Ethernet.
 - U normalnom radu Wi-Fi radi, ali žica je stabilnija.
-- Ne treba statička IP adresa ni port forwarding.
+- Statička IP adresa i port forwarding nisu nužni, ali s forwardom P2P portova čvor ima više peerova ([ADR-009](02-decisions.md#adr-009)).
