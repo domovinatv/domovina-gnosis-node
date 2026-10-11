@@ -239,26 +239,26 @@ Nethermind je nakon ispravka startao u 18:11:52. Prvih ~15 s je ponavljao `Pivot
 
 ```mermaid
 gantt
-  dateFormat HH:mm
+  dateFormat YYYY-MM-DD HH:mm
   axisFormat %H:%M
   title Prva instalacija na i9, 2026-10-10/11 (Wi-Fi, bez port forwarda)
   section Priprema
-  Provjera verzija, config, preflight      :17:00, 30m
-  10-host-setup, 20-install                :17:32, 23m
-  30-services, Nethermind exit 159 + fix   :18:08, 4m
+  Provjera verzija, config, preflight      :2026-10-10 17:00, 30m
+  10-host-setup, 20-install                :2026-10-10 17:32, 23m
+  30-services, Nethermind exit 159 + fix   :2026-10-10 18:08, 4m
   section Teku
-  Checkpoint pa čeka EL (optimistic)       :18:09, 256m
+  Checkpoint pa čeka EL (optimistic)       :2026-10-10 18:09, 256m
   section Nethermind
-  Headeri (48,7 M)                         :18:12, 122m
-  Snap state ranges                        :18:12, 161m
-  Large storage (zadnji ugovori)           :20:53, 92m
-  Old bodies (do svibnja 2025)             :22:25, 62m
-  Restart, barrier 42.550.000 (ADR-010)    :crit, 23:27, 5m
-  Old receipts (zadnja godina)             :23:32, 56m
+  Headeri (48,7 M)                         :2026-10-10 18:12, 122m
+  Snap state ranges                        :2026-10-10 18:12, 161m
+  Large storage (zadnji ugovori)           :2026-10-10 20:53, 92m
+  Old bodies (do svibnja 2025)             :2026-10-10 22:25, 62m
+  Restart, barrier 42.550.000 (ADR-010)    :crit, 2026-10-10 23:27, 5m
+  Old receipts (zadnja godina)             :2026-10-10 23:32, 56m
   section Nakon synca
-  ~1.500 % CPU (spin + PeerManager)        :crit, 00:28, 91m
-  Restarti s ispravcima                    :01:02, 57m
-  Mirovanje ~16 % CPU                      :milestone, 02:03, 0m
+  ~1.500 % CPU (spin + PeerManager)        :crit, 2026-10-11 00:28, 91m
+  Restarti s ispravcima                    :2026-10-11 01:02, 57m
+  Mirovanje ~16 % CPU                      :milestone, 2026-10-11 02:03, 0m
 ```
 
 Za repliku na novom stroju vrijedi:
