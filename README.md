@@ -17,7 +17,7 @@ Ovaj repo je **single source of truth**: odluke, verzije, skripte i runbookovi s
 | Čvor na i9 (Nethermind + Teku, verzije u `config/versions.env`) | **radi od 2026-10-11**: sinkroniziran (stanje + zadnjih 367 dana povijesti), [dnevnik prve instalacije](docs/2026-10-10-prvo-pokretanje-i9-disk.md) |
 | launchd servisi, `gnosisctl` | spremno |
 | Payment listener | spremno, testirano protiv javnog Gnosis RPC-a |
-| RPC prema van (Cloudflare Tunnel + Worker) | dizajn u [docs/06](docs/06-rpc-exposure.md); Worker nije napisan |
+| RPC prema van (Cloudflare Tunnel + Worker) | [plan](docs/2026-10-11-plan-port-forward-i-tunel.md) i dizajn u [docs/06](docs/06-rpc-exposure.md); čeka razdoblje promatranja |
 | Validator | procedura u [docs/08](docs/08-validator.md); ključevi nisu generirani |
 
 ## Brzi početak (na i9 MacBooku)
@@ -99,7 +99,7 @@ docs/research/             sirovi istraživački nalazi s izvorima (2026-10-01)
 8. [Validator](docs/08-validator.md): ključevi, depozit, rad, izlaz
 9. [Sigurnost i model prijetnji](docs/09-security.md)
 
-Dnevnik rada: [2026-10-01 — prepisivanje, zamke, otvorene stavke za i9](docs/2026-10-01-prepisivanje-i-otvorene-stavke.md), [2026-10-10 — prva instalacija na i9: disk, sync, CPU](docs/2026-10-10-prvo-pokretanje-i9-disk.md). Poznati problemi: [docs/05](docs/05-operations.md#poznati-problemi).
+Dnevnik rada: [2026-10-01 — prepisivanje, zamke, otvorene stavke za i9](docs/2026-10-01-prepisivanje-i-otvorene-stavke.md), [2026-10-10 — prva instalacija na i9: disk, sync, CPU](docs/2026-10-10-prvo-pokretanje-i9-disk.md). Poznati problemi: [docs/05](docs/05-operations.md#poznati-problemi). Sljedeće: [plan port forwarda i Cloudflare tunela](docs/2026-10-11-plan-port-forward-i-tunel.md).
 
 ## Pravila
 

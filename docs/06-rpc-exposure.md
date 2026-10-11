@@ -1,6 +1,6 @@
 # 06 — RPC prema van (Cloudflare Tunnel + Worker)
 
-> Status: **dizajn**. Worker nije napisan. Čvor mora biti sinkroniziran prije ovog koraka.
+> Status: **dizajn**. Worker nije napisan. Čvor mora biti sinkroniziran prije ovog koraka. Plan i redoslijed (faza 1: tunel za vlastite Workere s Access service tokenom; faza 2: javni proxy ispod) su u [2026-10-11 — plan port forwarda i tunela](2026-10-11-plan-port-forward-i-tunel.md).
 
 ## Problem
 

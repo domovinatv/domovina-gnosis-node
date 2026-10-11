@@ -289,6 +289,7 @@ Za repliku na novom stroju vrijedi:
 
 ## Vezani dokumenti
 
+- [2026-10-11 — plan port forwarda i tunela](2026-10-11-plan-port-forward-i-tunel.md): sljedeći koraci nakon razdoblja promatranja
 - [docs/03-macbook-host.md](03-macbook-host.md): disk kao jedino stvarno ograničenje
 - [docs/04-install-runbook.md](04-install-runbook.md)
 - [2026-10-01 — prepisivanje i otvorene stavke](2026-10-01-prepisivanje-i-otvorene-stavke.md)
