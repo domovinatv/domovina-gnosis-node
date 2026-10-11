@@ -6,6 +6,10 @@ Od čistog Maca do sinkroniziranog čvora. Koraci 1–6 traju oko 30 minuta rada
 
 Prvo pročitaj [otvorene stavke iz 2026-10-01](2026-10-01-prepisivanje-i-otvorene-stavke.md#otvorene-stavke-na-i9): to je popis onoga što pri ovoj instalaciji treba provjeriti i zapisati.
 
+Prva stvarna instalacija na i9 (2026-10-10/11) je opisana u [dnevniku](2026-10-10-prvo-pokretanje-i9-disk.md). Svi problemi koje je pogodila su ispravljeni u skriptama ili navedeni u [poznatim problemima](05-operations.md#poznati-problemi). Ovaj runbook ih uzima u obzir.
+
+Za `sudo` korake: naredbu pokreni sam u terminalu i pritisni Enter. Zalijepljen blok od više redova u iTermu zna ostaviti zadnji red neizvršen.
+
 
 - [ ] Mac je na struji i na žičanom Ethernetu, poklopac je otvoren, stroj stoji na postolju.
 - [ ] Na disku je barem 500 GB slobodnog, poželjno 700 GB ([docs/03](03-macbook-host.md)).
@@ -73,6 +77,8 @@ sudo scripts/20-install.sh
 
 Skripta preuzima Nethermind, Temurin JRE i Teku u verzijama iz `config/versions.env` (oko 450 MB) i provjerava svaki SHA-256 iz `config/versions.env`. Ako checksum ne odgovara, skripta staje i briše fajl.
 
+Prije pokretanja provjeri ima li novijih verzija (CLAUDE.md, pravilo 1). Svježa instalacija je najjeftiniji trenutak za upgrade.
+
 Opcionalno, GPG provjera Netherminda (treba `gpg`):
 
 ```bash
@@ -88,6 +94,8 @@ scripts/gnosisctl status
 ```
 
 - ✋ Za svaki daemon stigne obavijest „Allow in the Background”: dopusti je.
+- Teku povuče checkpoint za ~1 min i onda čeka EL (`EXECUTION_CLIENT_OFFLINE`). To je normalno.
+- Nethermind na praznoj bazi starta za ~10 s. **Nakon svakog kasnijeg restarta šuti u logu ~4,5–5 min** dok otvara bazu od nekoliko stotina GB. To nije zastoj.
 - Ako `status` pokazuje `not loaded`, ili servis stalno ima novi PID i `last exit` različit od 0, pogledaj:
   ```bash
   cat /opt/gnosis/logs/<servis>.stderr.log
@@ -106,8 +114,10 @@ Očekivani tijek:
 
 1. **Teku, prvih nekoliko minuta:** povuče finalizirano stanje s `checkpoint.gnosischain.com` i počne pratiti vrh lanca. Javlja `is_optimistic: true` dok EL ne sustigne.
 2. **Nethermind, satima:**
-   - headeri, zatim snap sync stanja, zatim old bodies i receipts;
-   - realna procjena je nekoliko sati za stanje plus do dan za povijest (nije izmjereno na ovom stroju);
+   - headeri i snap sync stanja paralelno, zatim old bodies i receipts;
+   - izmjereno na i9 (Wi-Fi, bez port forwarda, 4–8 EL peerova): **stanje 4 h 13 min, cijeli sync s godinom povijesti 6 h 15 min**. Detalji po fazama su u [dnevniku](2026-10-10-prvo-pokretanje-i9-disk.md);
+   - prvih ~2 h snap ide sporo, jer EL peerove zauzimaju headeri. Nakon headera ubrza;
+   - povijest se preuzima samo od `NM_HISTORY_FROM_BLOCK`, a pomični prozor (`NM_HISTORY_RETENTION_EPOCHS`) briše stariju ([ADR-010](02-decisions.md#adr-010)). **Oba broja treba izračunati za datum instalacije**: blok od prije godinu dana nađi preko `eth_getBlockByNumber` i `timestamp` (Gnosis prosjek je ~5,2 s po bloku, a ne točno 5 s);
    - CPU je visoko, a ventilatori rade punom brzinom.
 3. **Gotovo:**
    - `eth_syncing` vraća `false`;
@@ -115,6 +125,15 @@ Očekivani tijek:
    - Teku `sync distance` je 0 i nije optimistic.
 
 S `NM_FLATDB=false` se prekid sinkronizacije nastavlja od zadnje točke. Ipak, u tom periodu ne restartati bez razloga.
+
+### Nakon synca: CPU mora pasti
+
+Kad je čvor na vrhu lanca, obrada bloka traje ~35 ms svakih 5 s. Ako Nethermind i dalje troši stotine posto CPU-a, uzrok je jedan od [poznatih problema](05-operations.md#poznati-problemi). Uzrok se nalazi ovako:
+
+```bash
+sudo scripts/20-install.sh diagtools       # jednom
+scripts/gnosisctl dotnet-trace 30          # pa raspodjela CPU-a po metodama
+```
 
 ## 8. Pravi restart
 

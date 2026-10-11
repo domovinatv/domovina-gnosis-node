@@ -113,6 +113,25 @@ scripts/gnosisctl dotnet-trace 30      # CPU trace 30 s → /tmp/nethermind-trac
 - Za `sample` koristiti `pgrep -x nethermind`, nikad `pgrep -f …nethermind…`. `-f` pogađa i druge procese čija naredba sadrži taj tekst, a `sample` onda drugi PID shvati kao trajanje.
 - Nethermind je release build. Debug build iz izvornog koda mijenja tajming i ne pokazuje isti problem.
 
+## Poznati problemi {#poznati-problemi}
+
+Pogođeni pri prvoj instalaciji na i9 (Nethermind 2.1.0, Teku 26.10.0, macOS 26). Gdje piše „ispravljeno”, skripte to već rade. [Dnevnik](2026-10-10-prvo-pokretanje-i9-disk.md) ima mjerenja i dokaze.
+
+| Simptom | Uzrok | Stanje |
+| --- | --- | --- |
+| Nethermind se ruši, `last exit 159`, stderr: `DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set` | .NET single-file bundle se raspakira u `$HOME`, a `_gnosis` ima `/var/empty` | ispravljeno: plist postavlja `HOME` i `DOTNET_BUNDLE_EXTRACT_BASE_DIR` u `state/nethermind` |
+| Nakon synca Nethermind ~1.500 % CPU, 60 % sys, `sample` pokazuje `swtch_pri`/`SpinWait` | idle .NET thread-pool niti se vrte prije spavanja (Nethermind PR #14162, nije u 2.1.0) | zaobiđeno: `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0`; ukloniti nakon upgradea |
+| I dalje ~460 % CPU, `dotnet-trace` pokazuje `PeerManager` + thread pool + finalizer | PeerManager u petlji bira kandidate koje odbije filtar nedavnih IP-ova, kad je malo peerova (PR #14190, nije u 2.1.0) | zaobiđeno: `--Network.FilterPeersByRecentIp false` (Nethermind pao na ~16 % CPU, EL peerova 8 → 12); ukloniti nakon upgradea |
+| Pomični prozor povijesti čuva dvostruko dulje nego što je zadano | Nethermind 2.1.0 računa `History.RetentionEpochs` kao 32 bloka, a Gnosis ima 16 slotova po epohi | ispravljeno: 198.180 = 367 dana (32 × 5 s po „epohi”) |
+| Cijela povijest ne stane na 1 TB disk | default Gnosis barrier je 2022: ~260 GB bodies + ~220 GB receipts | ADR-010: povijest samo za zadnju godinu |
+| Nakon restarta Nethermind ~5 min ništa ne piše u log | otvaranje RocksDB baze od ~300 GB | normalno, pričekati |
+| `eth_getTransactionByHash` vraća `null` za blok koji ima tijelo | indeks hash → blok nastaje s receiptsima | normalno dok Old Receipts ne dođu do tog bloka |
+| Prvi minuti receiptsa pokazuju ~58 KB/blok | RocksDB piše nesažeto | nakon kompakcije ~15 KB/blok; o disku ne zaključivati iz prvih minuta |
+| `sudo sample $(pgrep -f …nethermind…)` traje satima | `pgrep -f` pogodi i druge procese, pa `sample` drugi PID uzme kao trajanje | koristiti `pgrep -x nethermind` |
+| `sudo 20-install.sh` ostavi root fajlove u `~/.gnupg` i root `dirmngr` | `sudo` na macOS-u zadržava `HOME` | ispravljeno: gpg se pokreće kao `$SUDO_USER` |
+| `lowpowermode 1` i na struji | macOS postavka | ispravljeno: `10-host-setup.sh` ga gasi |
+| Samo 4–8 EL peerova | nema dolaznih veza (router) | radi, ali sporije; port forward po [ADR-009](02-decisions.md#adr-009) |
+
 ## Dnevnik
 
 Ovdje kronološki upisivati događaje na čvoru: instalaciju, upgradeove, ispade i promjene konfiguracije.
@@ -128,3 +147,4 @@ Ovdje kronološki upisivati događaje na čvoru: instalaciju, upgradeove, ispade
 | 2026-10-10 | 23:27: restart Nethermind s granicom povijesti 42.550.000 ([ADR-010](02-decisions.md#adr-010)). Start nakon restarta traje ~4,5 min (otvaranje baze). Old Receipts samo za zadnju godinu, procjena ~90 GB. [Detalji](2026-10-10-prvo-pokretanje-i9-disk.md#restart-s-adr-010-2327) |
 | 2026-10-11 | 00:27:33: **sync gotov** (ukupno 6 h 15 min). Baza 304 GB, slobodno 227 GiB. Mreža i disk u mirovanju niski, ali Nethermind i dalje ~1.500 % CPU (60 % sys), uzrok otvoren. [Detalji](2026-10-10-prvo-pokretanje-i9-disk.md#sync-gotov-2026-10-11-002733) |
 | 2026-10-11 | 01:02 i 01:35: restarti. Nethermind CPU s ~1.500 % na ~530 % uz `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0` (thread-pool spin, PR #14162). Ostatak je lock contention u 37 thread-pool niti, uzrok otvoren. Pomični prozor: `RetentionEpochs` se računa po 32 bloka, ispravno 198.180 = 367 dana. Pruner obrisao 4.180.854 blokova (do #42.350.605). Dodani `diagtools` (`gnosisctl dotnet-stack|dotnet-trace`). |
+| 2026-10-11 | 01:54: restart s `--Network.FilterPeersByRecentIp false` (PeerManager petlja, Nethermind PR #14190, nađeno s `dotnet-trace`). Nethermind ~16 % CPU, sustav 95 % idle, 12 EL peerova. Čvor sinkroniziran i u mirovanju. [Detalji](2026-10-10-prvo-pokretanje-i9-disk.md#ostatak-cpu-a-peermanager-petlja-dotnet-stack-dotnet-trace) |

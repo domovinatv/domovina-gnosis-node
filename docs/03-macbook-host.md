@@ -13,7 +13,7 @@ Stroj: MacBook Pro 16" (2019), Intel Core i9 (8 jezgri / 16 dretvi), 64 GB RAM, 
 | Disk | NVMe, uglavnom ograničen prostorom | 1 TB NVMe |
 | Mreža | ~700 MB/h upload | žičani Ethernet preporučen |
 
-**Disk je jedino stvarno ograničenje.** Nethermind dokumentacija navodi oko 509 GB za Gnosis čvor (podatak bez datuma, stariji backend), uz to Teku desetak GB. Na 1 TB disku s macOS-om ostaje rezerva od oko 300 GB. Pratiti preko `gnosisctl health`, koji javlja grešku ispod 100 GB slobodnog.
+**Disk je jedino stvarno ograničenje.** Nethermind dokumentacija navodi oko 509 GB za Gnosis čvor s cijelom poviješću. Izmjereno na i9 (2026-10-11), s poviješću samo za zadnju godinu ([ADR-010](02-decisions.md#adr-010)): state 146 GB, blocks ~100 GB, receipts ~36 GB, headers 16 GB, Teku ~1 GB, ukupno ~300 GB. Povijest raste ~14 GB mjesečno, ali je pomični prozor drži stalnom. Rast stanja još se mjeri. Pratiti preko `gnosisctl health`, koji javlja grešku ispod 100 GB slobodnog.
 
 ✋ Prije instalacije maknuti sve što ne treba s ovog Maca. `00-preflight.sh` traži barem 500 GB slobodnog, a preporučuje 700 GB.
 
