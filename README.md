@@ -99,7 +99,7 @@ docs/research/             sirovi istraživački nalazi s izvorima (2026-10-01)
 8. [Validator](docs/08-validator.md): ključevi, depozit, rad, izlaz
 9. [Sigurnost i model prijetnji](docs/09-security.md)
 
-Dnevnik rada: [2026-10-01 — prepisivanje, zamke, otvorene stavke za i9](docs/2026-10-01-prepisivanje-i-otvorene-stavke.md), [2026-10-10 — prva instalacija na i9: disk, sync, CPU](docs/2026-10-10-prvo-pokretanje-i9-disk.md). Poznati problemi: [docs/05](docs/05-operations.md#poznati-problemi). Sljedeće: [plan port forwarda i Cloudflare tunela](docs/2026-10-11-plan-port-forward-i-tunel.md).
+Dnevnik rada: [2026-10-01 — prepisivanje, zamke, otvorene stavke za i9](docs/2026-10-01-prepisivanje-i-otvorene-stavke.md), [2026-10-10 — prva instalacija na i9: disk, sync, CPU](docs/2026-10-10-prvo-pokretanje-i9-disk.md), [2026-10-22 — review analiza koda, Git povijesti i stanja čvora (Gemini 4 Argon)](docs/2026-10-22-review-analiza.md). Poznati problemi: [docs/05](docs/05-operations.md#poznati-problemi). Sljedeće: [plan port forwarda i Cloudflare tunela](docs/2026-10-11-plan-port-forward-i-tunel.md).
 
 ## Pravila
 
