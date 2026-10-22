@@ -1,6 +1,6 @@
 # 06 — RPC prema van (Cloudflare Tunnel + Worker)
 
-> Status: **faza 1: tunel `acutis` radi od 2026-10-22** (tunel za vlastite Workere iza Cloudflare Accessa, [ADR-011](02-decisions.md#adr-011)); testovi s tokenom još otvoreni. Javni proxy Worker (faza 2) nije napisan. Dovršetak za čvor `acutis`: [predaja 2026-10-22](2026-10-22-predaja-acutis-tunel.md). Čvor mora biti sinkroniziran prije ovog koraka. Plan i redoslijed (faza 1: tunel za vlastite Workere s Access service tokenom; faza 2: javni proxy ispod) su u [2026-10-11 — plan port forwarda i tunela](2026-10-11-plan-port-forward-i-tunel.md).
+> Status: **faza 1: tunel `acutis` radi od 2026-10-22** (tunel za vlastite Workere iza Cloudflare Accessa, [ADR-011](02-decisions.md#adr-011)); HTTP i WS provjereni s tokenom `eure-reader`. Javni proxy Worker (faza 2) nije napisan. Dovršetak za čvor `acutis`: [predaja 2026-10-22](2026-10-22-predaja-acutis-tunel.md). Čvor mora biti sinkroniziran prije ovog koraka. Plan i redoslijed (faza 1: tunel za vlastite Workere s Access service tokenom; faza 2: javni proxy ispod) su u [2026-10-11 — plan port forwarda i tunela](2026-10-11-plan-port-forward-i-tunel.md).
 
 ## Problem
 

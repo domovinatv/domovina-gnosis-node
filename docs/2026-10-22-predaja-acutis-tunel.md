@@ -68,7 +68,22 @@ Nakon koraka 2 isti zahtjev s tokenom mora vratiti `"result":"0x64"`. Ako ostane
 - Izvana, bez tokena: oba hostnamea **403**.
 - Lokalno: `admin_peers` vraća grešku (namespace `Admin` isključen, `EnabledModules` = Eth, Net, Web3, Subscribe, Health).
 - Korak 4: stari tunel `macbook-i9-64GB` (`b75d5d8e-…`) je obrisan (`tunnel delete`), zatim `cert.pem`. Na računu su ostali `acutis` i `domovina-001-coolify-oracle`.
-- **Otvoreno:** testovi s tokenom (§ 3: `eth_chainId` = `0x64`, `admin_peers` kroz tunel, WS `newHeads`). Pokreću se na Mac Miniju, gdje je `secrets/cf-access-eure-reader.env`.
+- Testovi s tokenom (§ 3) odrađeni na Mac Miniju, vidi sljedeće poglavlje.
+
+## Izvedba koraka 3 (2026-10-22, Mac Mini)
+
+| Test | Rezultat |
+| --- | --- |
+| `eth_chainId` s tokenom | `0x64`, HTTP 200 |
+| `eth_blockNumber` | isti broj kao `gnosis-rpc.publicnode.com` u istom trenutku; `eth_syncing` = false |
+| `admin_peers`, `debug_traceBlockByNumber`, `personal_listAccounts`, `txpool_content` | greška -32600 („namespace … is disabled”), bez podataka |
+| bez tokena / krivi secret | 403 / 403 |
+| WS `eth_subscribe newHeads` s tokenom | pretplata OK, novi blok svakih ~5 s |
+| WS bez tokena | handshake odbijen |
+
+WebSocket se iz Node 24 može testirati bez `wscat`: ugrađeni `WebSocket` prima `{headers: {...}}` kao drugi argument (undici).
+
+**Otvoreno:** korak 5 (Worker u svom repou, `wrangler secret put`).
 
 ## 2. i9: pokretanje servisa (sudo, iTerm, jedan red)
 
