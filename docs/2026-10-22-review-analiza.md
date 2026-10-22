@@ -176,3 +176,12 @@ Pregledom stvarnog stanja na i9 MacBooku u odnosu na otvorene zadatke iz [dnevni
    - Složiti redoslijed mreže (`AX88179B` na vrh).
    - Po želji nadograditi Nethermind na `2.2.0` i Teku na `26.10.1` te napraviti test pravog restarta ([runbook § 8](04-install-runbook.md#8-pravi-restart)).
    - Krenuti u realizaciju [plana port forwarda i Cloudflare Tunnela](2026-10-11-plan-port-forward-i-tunel.md) (s `cloudflared 2026.10.3`).
+
+---
+
+## Vezani dokumenti
+
+- [2026-10-22 — provjera stabilnosti, resursa i životnog ciklusa čvora](2026-10-22-provjera-stabilnosti-i-resursa.md)
+- [2026-10-10 — prva instalacija na i9: disk, sync, CPU](2026-10-10-prvo-pokretanje-i9-disk.md)
+- [2026-10-11 — plan port forwarda i Cloudflare tunela](2026-10-11-plan-port-forward-i-tunel.md)
+- [docs/05 — operacije i dnevnik](05-operations.md#dnevnik)

@@ -87,3 +87,11 @@ U Nethermind logu (`/opt/gnosis/logs/nethermind/gnosis.log`) potvrđeno je aktiv
   Ostaje ručan, siguran i trenutan: promjena u `config/versions.env` + `sudo scripts/20-install.sh <klijent>` + `scripts/gnosisctl restart <klijent>`. Stara verzija se čuva pored nove, pa je rollback trenutan.
 - **Notifikacije o stanju čvora:**
   Trenutno ne postoji asinkroni push alarm za ispad servisa ili pad diska. Preporučeno je u budućnosti dodati periodični cron/launchd skript koji u slučaju `gnosisctl health != 0` šalje lokalnu macOS notifikaciju (`display notification`) ili webhook prema Telegramu/Discordu.
+
+---
+
+## Vezani dokumenti
+
+- [2026-10-22 — neovisna review analiza repozitorija, Git povijesti i stanja čvora (Gemini 4 Argon)](2026-10-22-review-analiza.md)
+- [2026-10-10 — prva instalacija na i9: disk, sync, CPU](2026-10-10-prvo-pokretanje-i9-disk.md)
+- [docs/05 — operacije i dnevnik](05-operations.md#dnevnik)
