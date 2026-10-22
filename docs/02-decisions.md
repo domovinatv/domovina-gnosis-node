@@ -216,3 +216,58 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 - Promjena je reverzibilna. Spuštanjem granice i restartom Nethermind dopunjava stariju povijest, ako ima mjesta.
 - Peerovi koji traže staru povijest od ovog čvora je neće dobiti. Mreža to podnosi, jer arhivske nodove drže drugi.
 
+
+---
+
+## ADR-011: RPC tunel po čvoru za vlastite Workere, iza Cloudflare Accessa {#adr-011}
+
+**Kontekst.**
+
+- Prvi korisnici RPC-a su **vlastiti Cloudflare Workeri** (npr. čitanje EURe transfera), a ne mobilni novčanik. Worker tajnu može držati kao secret, pa javni proxy Worker iz [ADR-005](#adr-005) u ovoj fazi nije potreban ([plan § 2](2026-10-11-plan-port-forward-i-tunel.md)).
+- Port forward za RPC ne dolazi u obzir ([ADR-009](#adr-009)): tunel je odlazan i ne treba javni IP ni otvoren port.
+- Workers VPC (Worker do tunela bindingom, bez javnog hostnamea) je 2026-10-22 još **beta** ([developers.cloudflare.com/workers-vpc](https://developers.cloudflare.com/workers-vpc/)).
+- `cloudflared service install` stvara plist izvan repoa, pokreće `cloudflared` kao root i ostavlja uključen autoupdate.
+- Zona `mpt.hr` je na Cloudflareu. Besplatni Universal SSL pokriva samo jednu razinu poddomene (`*.mpt.hr`).
+
+**Odluka.**
+
+- Svaki čvor ima vlastiti **lokalno upravljani** imenovani tunel. Ime tunela i hostnameova je ime čvora iz kataloga ([ADR-012](#adr-012), [docs/11](11-imena-cvorova.md)):
+  - `<NODE_NAME>-rpc.mpt.hr` → `127.0.0.1:8545` (HTTP JSON-RPC);
+  - `<NODE_NAME>-ws.mpt.hr` → `127.0.0.1:8546` (WebSocket);
+  - sve ostalo dobiva 404. Engine API (8551), beacon REST i metrike nikad ne idu u tunel.
+- Prvi čvor (i9) je `acutis`: `acutis-rpc.mpt.hr` i `acutis-ws.mpt.hr`.
+- `cloudflared` radi kao LaunchDaemon `tv.domovina.gnosis.tunnel` pod `_gnosis`. Plist i `config.yml` generira `scripts/30-services.sh` iz `config/node.env` (`TUNNEL_ENABLED`, `NODE_NAME`, `TUNNEL_ZONE`, `TUNNEL_ID`). Verzija je zakucana u `config/versions.env`, a `--no-autoupdate` je uključen ([ADR-007](#adr-007)).
+- Oba hostnamea su iza Cloudflare Access self-hosted aplikacije s politikom **Service Auth**. Svaki Worker koji zove RPC dobiva **vlastiti** service token, kako bi se mogao opozvati zasebno.
+- Workers VPC se ponovno razmatra kad izađe iz bete.
+
+**Posljedice.**
+
+- Bez service tokena Access vraća 403. Ako token procuri, dostupni su samo moduli `[Eth,Net,Web3,Subscribe,Health]`.
+- Credentials JSON tunela je tajna: `/opt/gnosis/secrets/cloudflared/<TUNNEL_ID>.json`, `_gnosis` 600. `cert.pem` iz `cloudflared tunnel login` vrijedi za cijelu zonu i treba samo za `tunnel create` i `route dns`; nakon postavljanja se briše.
+- Cloudflare vidi sav RPC promet ([ADR-005](#adr-005)).
+- `eth_getLogs` i receipts postoje samo za zadnjih 367 dana ([ADR-010](#adr-010)). Starija povijest EURe-a mora doći iz indexera.
+- Faza 2 (javni proxy Worker za novčanik, [docs/06](06-rpc-exposure.md)) postaje još jedan klijent istog tunela.
+- Log `cloudflared`-a (`logs/tunnel.stderr.log`) se ne rotira. Na razini `info` je mali; ako naraste, dodaje se newsyslog.
+
+---
+
+## ADR-012: Imena čvorova po svecima i blaženicima, vezana uz županiju {#adr-012}
+
+**Kontekst.**
+
+- Cilj je mreža od barem 21 čvora, po jedan u svakoj županiji i Gradu Zagrebu. Svaki čvor treba ime za hostname ([ADR-011](#adr-011)), logove i dokumentaciju.
+- Hostnameovi su javni: imena poddomena se mogu izlistati i završavaju u Certificate Transparency logovima. Adresa ili IP u imenu otkrivaju lokaciju čvora, a time i validatora ([docs/08 § 7](08-validator.md#7-rizici-specificni-za-kucni-validator)).
+- Čvor se može fizički preseliti.
+
+**Odluka.**
+
+- Ime čvora je ime hrvatskog sveca ili blaženika vezanog uz **županiju** u kojoj čvor stoji. Katalog s redoslijedom prioriteta po županiji je u [docs/11](11-imena-cvorova.md), a izvori u [istraživanju](research/2026-10-22-katalog-svetaca-po-zupanijama.md).
+- Novi čvor uzima prvo slobodno ime svoje županije. Kad se preseli u drugu županiju, dobiva prvo slobodno ime nove županije. Iskorišteno ime se ne dodjeljuje ponovno.
+- Uz katalog postoje **simbolična imena** vezana uz čvor, a ne uz lokaciju. Prvi čvor (i9, Zagrebačka) je `acutis`, po sv. Carlu Acutisu, zaštitniku interneta i programera.
+- U hostnameu nema lokacije ni IP-a. Lokacija je u tablici čvorova u docs/11, bez ulice.
+
+**Posljedice.**
+
+- Selidba čvora mijenja hostnameove, pa Workere treba prebaciti ([docs/11 § Selidba](11-imena-cvorova.md#selidba)). Tunel (UUID) i credentials ostaju isti.
+- Šest županija ima samo jedno ime u katalogu, a Osječko-baranjska i Međimurska nemaju sveca s osobnom vezom. Za njih se katalog dopunjava kad se zna mjesto čvora.
+- `stepinac` ostaje plan za sljedeći čvor u Zagrebačkoj županiji, iako i9 stoji tamo pod imenom `acutis`.

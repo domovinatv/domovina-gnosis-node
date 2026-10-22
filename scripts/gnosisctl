@@ -8,8 +8,8 @@
 #   gnosisctl dotnet-stack           managed stacks of every Nethermind thread
 #   gnosisctl dotnet-trace [secs]    CPU trace of Nethermind (default 30 s), speedscope file
 #
-# Services: nethermind teku lighthouse validator listener
-# stop all = validator, listener, CL, EL (reverse dependency order, clean DB shutdown).
+# Services: nethermind teku lighthouse validator listener tunnel
+# stop all = tunnel, validator, listener, CL, EL (reverse dependency order, clean DB shutdown).
 
 source "$(dirname "$0")/lib.sh"
 load_config
@@ -18,7 +18,7 @@ sudo_if_needed() { if [[ $EUID -eq 0 ]]; then "$@"; else sudo "$@"; fi; }
 
 installed_services() {
   local s
-  for s in nethermind teku lighthouse validator listener; do
+  for s in nethermind teku lighthouse validator listener tunnel; do
     [[ -f "$LAUNCHD_DIR/$(label "$s").plist" ]] && echo "$s"
   done
   return 0
@@ -129,6 +129,7 @@ cmd_logs() {
     lighthouse) f="$(ls -t "$LOG_DIR"/lighthouse/*.log 2>/dev/null | head -1)" ;;
     validator)  f="$LOG_DIR/validator/validator.log" ;;
     listener)   f="$LOG_DIR/listener.log" ;;
+    tunnel)     f="$LOG_DIR/tunnel.stderr.log" ;;
     *) die "unknown service: $s" ;;
   esac
   [[ -n "$f" && -f "$f" ]] || f="$LOG_DIR/$s.stderr.log"
@@ -136,8 +137,8 @@ cmd_logs() {
   exec tail -n 100 -F "$f"
 }
 
-order_up=(nethermind teku lighthouse validator listener)
-order_down=(validator listener lighthouse teku nethermind)
+order_up=(nethermind teku lighthouse validator listener tunnel)
+order_down=(tunnel validator listener lighthouse teku nethermind)
 
 targets() {
   # Expand "all" into installed services in the given order.

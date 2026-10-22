@@ -1,6 +1,6 @@
 # 06 — RPC prema van (Cloudflare Tunnel + Worker)
 
-> Status: **dizajn**. Worker nije napisan. Čvor mora biti sinkroniziran prije ovog koraka. Plan i redoslijed (faza 1: tunel za vlastite Workere s Access service tokenom; faza 2: javni proxy ispod) su u [2026-10-11 — plan port forwarda i tunela](2026-10-11-plan-port-forward-i-tunel.md).
+> Status: **faza 1 u postavljanju** (tunel za vlastite Workere, [ADR-011](02-decisions.md#adr-011)). Javni proxy Worker (faza 2) nije napisan. Dovršetak za čvor `acutis`: [predaja 2026-10-22](2026-10-22-predaja-acutis-tunel.md). Čvor mora biti sinkroniziran prije ovog koraka. Plan i redoslijed (faza 1: tunel za vlastite Workere s Access service tokenom; faza 2: javni proxy ispod) su u [2026-10-11 — plan port forwarda i tunela](2026-10-11-plan-port-forward-i-tunel.md).
 
 ## Problem
 
@@ -36,43 +36,59 @@ Nethermind već ima ograničene module (`[Eth,Net,Web3,Subscribe,Health]`), pa n
 
 ## Postavljanje na Macu
 
-Hostnameovi ispod (`*.domovina.tv`) su primjer; stvarna zona se bira pri `tunnel login`.
+Faza 1 ([ADR-011](02-decisions.md#adr-011)): tunel po čvoru, hostnameovi `<NODE_NAME>-rpc.mpt.hr` i `<NODE_NAME>-ws.mpt.hr`. Primjer je čvor `acutis` (i9). Naredbe bez `sudo` pokreće korisnik `ms`; sudo naredbe idu u iTerm, jedna po jedna.
 
 ```bash
-sudo scripts/20-install.sh cloudflared
-sudo mkdir -p /usr/local/bin
-sudo ln -sf /opt/gnosis/cloudflared/current/cloudflared /usr/local/bin/cloudflared
+sudo scripts/20-install.sh cloudflared                 # verzija iz config/versions.env
+CFD=/opt/gnosis/cloudflared/current/cloudflared        # ne Homebrewov /usr/local/bin/cloudflared
 
-cloudflared tunnel login                     # otvara browser, bira zonu domovina.tv
-cloudflared tunnel create gnosis-node        # stvara UUID i credentials JSON u ~/.cloudflared/
-sudo mkdir -p /etc/cloudflared
-sudo cp ~/.cloudflared/<UUID>.json /etc/cloudflared/
+$CFD tunnel login                                      # browser, zona mpt.hr; piše ~/.cloudflared/cert.pem
+$CFD tunnel create acutis                              # ispisuje UUID, credentials u ~/.cloudflared/<UUID>.json
+$CFD tunnel route dns acutis acutis-rpc.mpt.hr
+$CFD tunnel route dns acutis acutis-ws.mpt.hr
+
+sudo mkdir -p /opt/gnosis/secrets/cloudflared
+sudo mv ~/.cloudflared/<UUID>.json /opt/gnosis/secrets/cloudflared/
+sudo chown -R _gnosis:_gnosis /opt/gnosis/secrets/cloudflared
+sudo chmod 700 /opt/gnosis/secrets/cloudflared; sudo chmod 600 /opt/gnosis/secrets/cloudflared/<UUID>.json
 ```
 
-`/etc/cloudflared/config.yml`:
+U lokalnom `config/node.env`:
 
-```yaml
-tunnel: <UUID>
-credentials-file: /etc/cloudflared/<UUID>.json
-ingress:
-  - hostname: rpc-origin.domovina.tv
-    service: http://127.0.0.1:8545
-  - hostname: ws-origin.domovina.tv
-    service: http://127.0.0.1:8546      # WS upgrade prolazi kroz http:// servis
-  - service: http_status:404
+```bash
+TUNNEL_ENABLED=true
+NODE_NAME=acutis
+TUNNEL_ZONE=mpt.hr
+TUNNEL_ID=<UUID>
 ```
 
 ```bash
-cloudflared tunnel route dns gnosis-node rpc-origin.domovina.tv
-cloudflared tunnel route dns gnosis-node ws-origin.domovina.tv
-sudo cloudflared service install             # LaunchDaemon com.cloudflare.cloudflared
+sudo scripts/30-services.sh install tunnel             # generira /opt/gnosis/etc/cloudflared/config.yml i plist
+scripts/gnosisctl logs tunnel                          # traži "Registered tunnel connection" (4 veze)
+rm ~/.cloudflared/cert.pem                             # vrijedi za cijelu zonu; treba samo za create i route dns
 ```
 
-`cloudflared service install` sa sudo stvara **LaunchDaemon**, a bez sudo LaunchAgent, koji ovdje ne želimo. Logovi su u `/Library/Logs/com.cloudflare.cloudflared.*.log`. Provjeriti i BTM: `sudo sfltool dumpbtm | grep -A8 cloudflare`.
+Generirani `config.yml` vodi `<NODE_NAME>-rpc` na `127.0.0.1:$EL_HTTP_PORT`, `<NODE_NAME>-ws` na `127.0.0.1:$EL_WS_PORT`, a sve ostalo na 404. Provjera: `$CFD tunnel --config /opt/gnosis/etc/cloudflared/config.yml ingress validate`.
+
+Ne koristi se `cloudflared service install`: pokreće `cloudflared` kao root, s autoupdateom i plistom izvan repoa. Kad se `cert.pem` opet zatreba (novi hostname), ponovi se `tunnel login`.
 
 ## Cloudflare strana
 
-1. Zero Trust → Access → Applications: dodati self-hosted aplikaciju za `rpc-origin` i `ws-origin`. Politika je Service Auth, a uz nju se stvara service token.
+**Faza 1 (vlastiti Workeri):**
+
+1. Zero Trust → Access → Service Auth → Service Tokens: po jedan token za svaki Worker koji zove RPC (npr. `eure-reader`). Client Secret se vidi samo jednom.
+2. Zero Trust → Access → Applications → Self-hosted: aplikacija `acutis-rpc` s hostnameovima `acutis-rpc.mpt.hr` i `acutis-ws.mpt.hr`. Politika s akcijom **Service Auth** koja uključuje te service tokene. Bez ijedne Allow politike za ljude.
+3. U Workeru: `wrangler secret put CF_ACCESS_CLIENT_ID` i `CF_ACCESS_CLIENT_SECRET`, i slati ih kao zaglavlja `CF-Access-Client-Id` / `CF-Access-Client-Secret`.
+4. Test:
+   ```bash
+   curl -s -o /dev/null -w '%{http_code}\n' https://acutis-rpc.mpt.hr      # 403 (ili redirect na login) bez tokena
+   curl -s https://acutis-rpc.mpt.hr -H "CF-Access-Client-Id: $ID" -H "CF-Access-Client-Secret: $SECRET" \
+     -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}'
+   ```
+
+**Faza 2 (javni proxy za novčanik):**
+
+1. Ista Access aplikacija, poseban service token za proxy Worker.
 2. Worker `domovina-gnosis-rpc`:
    - javni route `rpc.domovina.tv`;
    - secreti `ACCESS_CLIENT_ID` i `ACCESS_CLIENT_SECRET`;

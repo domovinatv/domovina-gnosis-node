@@ -104,7 +104,7 @@ install_cloudflared() {
   chmod 755 "$dir/cloudflared"
   unquarantine "$dir"
   activate_version cloudflared "$v"
-  info "service setup is manual, see docs/06-rpc-exposure.md"
+  info "tunnel setup: docs/06-rpc-exposure.md, then sudo scripts/30-services.sh install tunnel"
 }
 
 install_diagtools() {
