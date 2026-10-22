@@ -1,6 +1,8 @@
 # 2026-10-11 — Plan: port forwarding i Cloudflare Tunnel
 
-> Status: **plan, ništa od ovoga nije napravljeno.** Čvor prvo neko vrijeme radi 24/7 bez promjena (Wi-Fi, bez port forwarda, bez tunela), da se vidi kako se ponaša. Tek nakon toga slijede koraci ispod.
+> **Ažurirano 2026-10-22:** korak 1 (port forwarding) je napravljen, ali s portovima 30313/9010 umjesto 30303/9000 i kroz dva routera. Stanje, mjerenja i screenshotovi su u [docs/10 — Mreža i port forwarding](10-network.md). Cloudflare Tunnel (korak 2) još nije započet.
+>
+> Izvorni status: **plan, ništa od ovoga nije napravljeno.** Čvor prvo neko vrijeme radi 24/7 bez promjena (Wi-Fi, bez port forwarda, bez tunela), da se vidi kako se ponaša. Tek nakon toga slijede koraci ispod.
 
 Polazno stanje je opisano u [dnevniku prve instalacije](2026-10-10-prvo-pokretanje-i9-disk.md). Čvor je sinkroniziran od 2026-10-11 00:27. U mirovanju Nethermind troši ~16 % CPU-a, a sustav je 95 % idle. Ima 11–12 EL i ~25 CL peerova, ~227 GiB slobodnog diska i bazu od ~300 GB.
 
@@ -104,6 +106,7 @@ Kad Domovina novčanik bude trebao RPC izravno s mobitela, vrijedi dizajn iz [do
 
 ## Vezani dokumenti
 
+- [docs/10 — Mreža i port forwarding](10-network.md): provedeni korak 1
 - [docs/06 — RPC prema van](06-rpc-exposure.md): naredbe za cloudflared i dizajn javnog proxyja
 - [ADR-005](02-decisions.md#adr-005) (zero ingress za RPC), [ADR-009](02-decisions.md#adr-009) (P2P ingress)
 - [Dnevnik prve instalacije](2026-10-10-prvo-pokretanje-i9-disk.md)
