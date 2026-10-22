@@ -60,6 +60,16 @@ Provjera izvana, prije pokretanja tunela:
 
 Nakon koraka 2 isti zahtjev s tokenom mora vratiti `"result":"0x64"`. Ako ostane 1033, tunel nije spojen (`tunnel.stderr.log` na i9).
 
+## Izvedba koraka 2 i 4 (2026-10-22, i9)
+
+- 22:28: sudo naredba iz § 2 je prošla, servis `tunnel` radi (`gnosisctl status`). Credentials JSON je sad u `/opt/gnosis/secrets/cloudflared/` (`_gnosis`, 600), a `~ms/.cloudflared` je prazan.
+- `tunnel.stderr.log`: 4 × „Registered tunnel connection” (vie05, lju01, vie06, lju01), QUIC, svi connectivity pre-checkovi PASS.
+- `ingress validate` je OK. `ingress rule`: `acutis-rpc` → `127.0.0.1:8545`, `acutis-ws` → `127.0.0.1:8546`, nepoznati hostname → pravilo #2 (`http_status:404`).
+- Izvana, bez tokena: oba hostnamea **403**.
+- Lokalno: `admin_peers` vraća grešku (namespace `Admin` isključen, `EnabledModules` = Eth, Net, Web3, Subscribe, Health).
+- Korak 4: stari tunel `macbook-i9-64GB` (`b75d5d8e-…`) je obrisan (`tunnel delete`), zatim `cert.pem`. Na računu su ostali `acutis` i `domovina-001-coolify-oracle`.
+- **Otvoreno:** testovi s tokenom (§ 3: `eth_chainId` = `0x64`, `admin_peers` kroz tunel, WS `newHeads`). Pokreću se na Mac Miniju, gdje je `secrets/cf-access-eure-reader.env`.
+
 ## 2. i9: pokretanje servisa (sudo, iTerm, jedan red)
 
 ```bash
