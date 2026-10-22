@@ -23,7 +23,7 @@ flowchart LR
 
 | Uređaj | Uloga | Adresa | Napomena |
 | --- | --- | --- | --- |
-| Zyxel VMG8623-T50B | ISP router, NAT prema internetu | 192.168.1.1 | firmware V5.50(ACDV.1)b4, DHCP 192.168.1.2–254, lease 1 dan. Ima i vlastiti Wi-Fi, i9 nije na njemu |
+| Zyxel VMG8623-T50B | ISP router, NAT prema internetu | 192.168.1.1 | firmware V5.50(ACDV.1)b4, DHCP 192.168.1.2–254, lease 1 dan. Internet ide preko PPPoE sučelja `ETH_INT` (javni IP), a `ETHWAN_VOICE/MGMT` (IPoE, 10.160.x) je operaterov za telefoniju i upravljanje. Ima i vlastiti Wi-Fi, i9 nije na njemu |
 | TP-Link Archer C64 | drugi router (NAT), Wi-Fi na kojem je i9 | WAN 192.168.1.170 (DHCP od Zyxela), LAN 192.168.0.1 | firmware 1.11.0 Build 220425, DHCP 192.168.0.100–249, lease 120 min |
 | i9 | Gnosis čvor | 192.168.0.102 | Wi-Fi s **privatnom MAC adresom** (macOS „Private Wi-Fi address”), ne MAC-om kartice |
 
@@ -35,8 +35,8 @@ Lanac za svaki P2P port: Zyxel (89.201.137.96) → TP-Link WAN 192.168.1.170 →
 
 | Port | Protokol | Klijent | Config | Zyxel → | TP-Link → |
 | --- | --- | --- | --- | --- | --- |
-| 30313 | TCP + UDP | Nethermind (devp2p + discovery) | `EL_P2P_PORT` | 192.168.1.170, „TCP/UDP” | 192.168.0.102, „All” |
-| 9010 | TCP + UDP | Teku (libp2p + discv5) | `CL_P2P_PORT` | 192.168.1.170, „TCP/UDP” | 192.168.0.102, „All” |
+| 30313 | TCP + UDP | Nethermind (devp2p + discovery) | `EL_P2P_PORT` | 192.168.1.170, „TCP/UDP” (u listi „ALL”) | 192.168.0.102, „All” |
+| 9010 | TCP + UDP | Teku (libp2p + discv5) | `CL_P2P_PORT` | 192.168.1.170, „TCP/UDP” (u listi „ALL”) | 192.168.0.102, „All” |
 | 9001 | UDP | Teku (QUIC) | `CL_QUIC_PORT` | 192.168.1.170, „UDP” | 192.168.0.102, „UDP” |
 
 Imena pravila na oba routera: `gnosis-el`, `gnosis-cl`, `gnosis-cl-quic`.
@@ -47,6 +47,39 @@ Adrese su zaključane DHCP rezervacijama:
 - **Zyxel** (Network Setting → Home Networking → Static DHCP): WAN MAC TP-Linka → 192.168.1.170.
 
 Ako macOS promijeni privatnu MAC adresu (postavka „Rotating” umjesto „Fixed”), i9 dobiva drugu adresu i forward prestaje raditi. Provjera: `ifconfig en0 | grep ether` mora odgovarati rezervaciji na TP-Linku.
+
+## Screenshotovi konfiguracije (2026-10-22)
+
+Snimljeno nakon postavljanja, u admin sučeljima oba routera. MAC adrese i serijski broj su zacrnjeni. Kod promjene na routeru treba snimiti nove slike i zamijeniti ove.
+
+**Zyxel VMG8623-T50B** (192.168.1.1):
+
+| Stranica | Što pokazuje |
+| --- | --- |
+| [NAT → Port Forwarding](img/routers/zyxel-1-nat-port-forwarding.jpg) | tri pravila prema TP-Linku 192.168.1.170 |
+| [Home Networking → Static DHCP](img/routers/zyxel-2-static-dhcp.jpg) | WAN MAC TP-Linka → 192.168.1.170 |
+| [Home Networking → LAN Setup](img/routers/zyxel-3-lan.jpg), [DHCP](img/routers/zyxel-4-dhcp-pool.jpg) | LAN 192.168.1.1/24, DHCP .2–.254, lease 1 dan |
+| [Home Networking → UPnP](img/routers/zyxel-5-upnp.jpg) | UPnP uključen, mapiranja Tailscalea |
+| [NAT → DMZ](img/routers/zyxel-6-dmz.jpg) | DMZ isključen (0.0.0.0) |
+| [System Info](img/routers/zyxel-7-system-info.jpg) | firmware, WAN i LAN3/LAN4 na 1000M/Full |
+| [System Info → WAN](img/routers/zyxel-8-wan.jpg) | PPPoE `ETH_INT` s javnim IP-om 89.201.137.96 |
+
+![Zyxel port forwarding](img/routers/zyxel-1-nat-port-forwarding.jpg)
+
+**TP-Link Archer C64** (192.168.0.1):
+
+| Stranica | Što pokazuje |
+| --- | --- |
+| [NAT Forwarding → Port Forwarding](img/routers/tplink-1-port-forwarding.jpg) | tri pravila prema i9 192.168.0.102 |
+| [Operation Mode](img/routers/tplink-2-operation-mode.jpg) | Router Mode (zato je NAT dvostruk) |
+| [Network → Status, WAN](img/routers/tplink-3-status-wan.jpg) | WAN 192.168.1.170, gateway 192.168.1.1 |
+| [Network → Status, LAN](img/routers/tplink-4-status-lan.jpg) | LAN 192.168.0.1, DHCP .100–.249 |
+| [Network → DHCP Server](img/routers/tplink-5-dhcp.jpg) | DHCP postavke, lease 120 min |
+| [Address Reservation](img/routers/tplink-6-reservation.jpg) | privatna Wi-Fi MAC i9 → 192.168.0.102 |
+| [NAT Forwarding → UPnP](img/routers/tplink-7-upnp.jpg) | UPnP uključen, 64 mapiranja |
+| [NAT Forwarding → DMZ](img/routers/tplink-8-dmz.jpg) | DMZ isključen |
+
+![TP-Link port forwarding](img/routers/tplink-1-port-forwarding.jpg)
 
 ## Zašto 30313 i 9010, a ne 30303 i 9000
 
