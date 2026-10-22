@@ -142,6 +142,9 @@ render_service() {
       teku_java_cmd "$TEKU_HEAP"
       local extra=()
       [[ -n "$FEE_RECIPIENT" ]] && extra+=("--validators-proposer-default-fee-recipient=$FEE_RECIPIENT")
+      # An explicit advertised IP freezes the ENR (Teku DiscV5Service): otherwise discv5
+      # learns the NAT-rewritten UDP source port from peers and advertises that instead.
+      [[ -n "${P2P_ADVERTISED_IP:-}" ]] && extra+=("--p2p-advertised-ip=$P2P_ADVERTISED_IP")
       write_plist "$file" "$(label teku)" always 120 "$DATA_DIR/teku" "" -- \
         "${TEKU_CMD[@]}" \
         --network=gnosis \

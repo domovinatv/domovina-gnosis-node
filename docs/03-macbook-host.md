@@ -120,4 +120,4 @@ Validator treba sat točan na manje od 0,5 s, a poželjno ispod 100 ms. macOS `t
 
 - ✋ Za prvu sinkronizaciju koristiti USB-C Gigabit Ethernet.
 - U normalnom radu Wi-Fi radi, ali žica je stabilnija.
-- Statička IP adresa i port forwarding nisu nužni, ali s forwardom P2P portova čvor ima više peerova ([ADR-009](02-decisions.md#adr-009)).
+- Statička IP adresa i port forwarding nisu nužni, ali s forwardom P2P portova čvor ima više peerova ([ADR-009](02-decisions.md#adr-009)). Topologija ureda i pravila na routerima: [docs/10](10-network.md).

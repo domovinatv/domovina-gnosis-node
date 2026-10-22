@@ -41,8 +41,8 @@ scripts/gnosisctl health                       # ponavljaj dok se ne sinkronizir
 ```mermaid
 flowchart LR
   subgraph P2P["Gnosis P2P mreža"]
-    ELP["EL peeri :30303"]
-    CLP["CL peeri :9000"]
+    ELP["EL peeri :30313"]
+    CLP["CL peeri :9010"]
   end
   subgraph Mac["MacBook i9 — /opt/gnosis, user _gnosis, launchd"]
     NM["Nethermind 2.0<br/>RPC 127.0.0.1:8545/8546"]
@@ -98,6 +98,7 @@ docs/research/             sirovi istraživački nalazi s izvorima (2026-10-01)
 7. [Notifikacije o uplatama](docs/07-wallet-notifications.md): listener i ugovor s Workerom
 8. [Validator](docs/08-validator.md): ključevi, depozit, rad, izlaz
 9. [Sigurnost i model prijetnji](docs/09-security.md)
+10. [Mreža i port forwarding](docs/10-network.md): topologija ureda (Zyxel → TP-Link → i9), pravila na routerima, zamke
 
 Dnevnik rada: [2026-10-01 — prepisivanje, zamke, otvorene stavke za i9](docs/2026-10-01-prepisivanje-i-otvorene-stavke.md), [2026-10-10 — prva instalacija na i9: disk, sync, CPU](docs/2026-10-10-prvo-pokretanje-i9-disk.md), [2026-10-22 — review analiza koda, Git povijesti i stanja čvora (Gemini 4 Argon)](docs/2026-10-22-review-analiza.md). Poznati problemi: [docs/05](docs/05-operations.md#poznati-problemi). Sljedeće: [plan port forwarda i Cloudflare tunela](docs/2026-10-11-plan-port-forward-i-tunel.md).
 

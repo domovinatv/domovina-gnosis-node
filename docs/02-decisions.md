@@ -173,8 +173,8 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 
   | Port | Protokol | Klijent | Config |
   | --- | --- | --- | --- |
-  | 30303 | TCP + UDP | Nethermind (devp2p + discovery) | `EL_P2P_PORT` |
-  | 9000 | TCP + UDP | Teku (libp2p + discv5) | `CL_P2P_PORT` |
+  | 30313 | TCP + UDP | Nethermind (devp2p + discovery) | `EL_P2P_PORT` |
+  | 9010 | TCP + UDP | Teku (libp2p + discv5) | `CL_P2P_PORT` |
   | 9001 | UDP | Teku (QUIC) | `CL_QUIC_PORT` |
 
 - RPC (8545/8546), Engine API (8551), REST (5052) i metrics ostaju vezani na `127.0.0.1`. Izvana idu samo kroz tunel i Worker ([ADR-005](#adr-005)).
@@ -188,6 +188,8 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 - IP ureda je javno vezan uz Gnosis čvor. To je i bez forwarda bio slučaj ([docs/09](09-security.md)), jer odlazni P2P objavljuje istu adresu.
 - **Više nodova iza iste IP adrese** je moguće. Svaki dobiva svoje portove (npr. 30304/9002/9003) i svoja pravila na routeru. Vanjski port mora biti jednak unutarnjem, jer node objavljuje port na kojem sluša. Inače treba postaviti advertised portove (Teku `--p2p-advertised-port`, `--p2p-advertised-udp-port`, `--p2p-advertised-quic-port`).
 - Na Macu treba provjeriti da application firewall pušta `nethermind` i `java` (`socketfilterfw --listapps`: „Allow incoming connections”). Na i9 je to već slučaj.
+
+**Dopuna 2026-10-22: P2P portovi 30313 i 9010 umjesto 30303 i 9000.** Pri postavljanju forwarda u uredu ([docs/10](10-network.md)) TP-Link je odbio pravila za UDP 30303 i UDP 9000 („Conflicting with existing port”) s praznim tablicama forwarda, triggeringa i DMZ-a, a TCP i UDP 9001 je prihvatio. Uzrok su najvjerojatnije UPnP mapiranja koja sučelje ne prikazuje. Čišćenje UPnP-a bi na trenutak prekinulo Tailscale i ne jamči da se neće ponoviti. Standardni portovi su na kućnim i uredskim routerima često zauzeti (UPnP, drugi čvor), pa su **default u `config/node.env.example` sada `EL_P2P_PORT=30313` i `CL_P2P_PORT=9010`**; `CL_QUIC_PORT=9001` je ostao. Klijentima je port svejedno: objavljuju ga u enode/ENR zapisu, a peerovi se spajaju na objavljeni port. Posljedica: na postojećem čvoru promjena traži `sudo scripts/30-services.sh install nethermind teku` (restart oba klijenta), a pravila na routeru moraju pratiti `node.env`. Uz to Teku dobiva `--p2p-advertised-ip` iz nove postavke `P2P_ADVERTISED_IP` (statična javna IP). Bez nje je discv5 objavio NAT-om prepisani UDP port (23756 umjesto 9010), na koji nema forwarda ([docs/10](10-network.md#objavljena-adresa-enr-enode)).
 
 ---
 
