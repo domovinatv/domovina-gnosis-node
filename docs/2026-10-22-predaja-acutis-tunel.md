@@ -14,7 +14,7 @@
 | Credentials JSON | još u `~ms/.cloudflared/f751f6fe-8a00-4895-a2d4-79e175a90b6d.json` na i9 |
 | `cert.pem` (kontrola nad cijelom zonom) | još u `~ms/.cloudflared/cert.pem` na i9 |
 | Servis `tv.domovina.gnosis.tunnel` | **nije pokrenut** |
-| Cloudflare Access | **nije postavljen** |
+| Cloudflare Access | postavljen 2026-10-22: token `eure-reader`, aplikacija `acutis-rpc` (403 bez tokena) |
 
 **Redoslijed je obavezan: prvo Access (korak 1), tek onda servis na i9 (korak 2).** Čim servis radi, hostnameovi su dostupni s interneta; bez Accessa bi RPC bio otvoren svima.
 
@@ -41,6 +41,24 @@ flowchart LR
    - Policy: name `workers`, **Action: Service Auth**, Include → **Service Token** → `eure-reader`.
    - Nikakva Allow politika za ljude (e-mail, IdP).
 4. Provjera prije koraka 2: u popisu aplikacija `acutis-rpc` ima oba hostnamea i jednu politiku s akcijom Service Auth.
+
+## Izvedba koraka 1 (2026-10-22, Mac Mini)
+
+Access je postavljen kroz dashboard, račun **D.O.M.** (`7dc7167b7e2e00923bfa7cd697df14e4`; zona `mpt.hr` je tamo, provjereno preko API-ja `zones?name=mpt.hr`).
+
+- Dashboard je preimenovao izbornik: service tokeni su sada **Zero Trust → Access controls → Service credentials** (`/one/access-controls/service-credentials`), aplikacije **Access controls → Applications** (`/one/access-controls/apps`). Stari put `/access/service-auth` vraća 404.
+- `wrangler` OAuth token nema Access prava (scopeovi bez `access`), pa API put nije bio moguć bez novog API tokena.
+- Aplikacija: tip *Self-hosted and private → Public DNS*, dva public hostnamea, politika `workers` (Action **Service Auth**, Include **Service Token** = `eure-reader`; ne „Any Access Service Token”, jer bi tada prošao i token drugog Workera, npr. `domovina-analytics-worker`).
+- Client ID i Secret su na Mac Miniju u `secrets/cf-access-eure-reader.env` (gitignored, 600) i u password manageru. Secret se prikazuje samo jednom: dok je ekran s njim otvoren, ne navigirati taj tab (prvi secret je tako izgubljen i token je morao dobiti novi).
+
+Provjera izvana, prije pokretanja tunela:
+
+| Zahtjev | `acutis-rpc` | `acutis-ws` | Značenje |
+| --- | --- | --- | --- |
+| bez tokena | 403 | 403 | Access blokira |
+| s tokenom | 530, error 1033 | 530, error 1033 | Access propušta; tunel još nema aktivnih veza |
+
+Nakon koraka 2 isti zahtjev s tokenom mora vratiti `"result":"0x64"`. Ako ostane 1033, tunel nije spojen (`tunnel.stderr.log` na i9).
 
 ## 2. i9: pokretanje servisa (sudo, iTerm, jedan red)
 
