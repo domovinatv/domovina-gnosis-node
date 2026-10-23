@@ -98,6 +98,7 @@ Mapu koju `find` pokaže obriši tek kad je Nethermind ponovno gore i sinkronizi
 - Prvo izmjeri upit iz koraka 4 kroz tunel i upiši rezultat u tablicu. `fromBlock` neka bude `head − 6.330.000`, a ne vrijednost iz predaje (`head − 6.300.000` je također u redu).
 - `/api/activity` čita popis s `eth_getLogs` preko cijelog prozora (`fromBlock = head − 6.330.000`; na `Pruned history unavailable` ponovi s višim `fromBlock`; ne koristi `earliest`; najviše 20.000 logova po odgovoru), a vremena dobiva jednim batchom `eth_getBlockByNumber` (`false`, bez transakcija). Blockscout ostaje rezerva za grešku čvora i za adrese starije od 367 dana.
 - Cron indexer (`onchainIndexer.ts`, sada `CHUNK = 5_000`) može ići u većim komadima kad čita s čvora.
+- Trajna arhiva EURe uplata je baza Workera, a ne čvor ([ADR-014](02-decisions.md#adr-014)). Indexer redovito sprema nove logove s čvora, a povijest stariju od 367 dana učita jednokratno iz Blockscouta ili arhivskog RPC-a.
 - ADR-013 iz „predloženo” prelazi u „prihvaćeno”, s izmjerenim brojkama.
 
 ## Otvoreno
@@ -107,4 +108,4 @@ Mapu koju `find` pokaže obriši tek kad je Nethermind ponovno gore i sinkronizi
 ## Vezani dokumenti
 
 - [Predaja tunela `acutis`](2026-10-22-predaja-acutis-tunel.md)
-- [ADR-010](02-decisions.md#adr-010), [ADR-011](02-decisions.md#adr-011), [ADR-013](02-decisions.md#adr-013)
+- [ADR-010](02-decisions.md#adr-010), [ADR-011](02-decisions.md#adr-011), [ADR-013](02-decisions.md#adr-013), [ADR-014](02-decisions.md#adr-014)

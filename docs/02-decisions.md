@@ -245,7 +245,7 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 - Bez service tokena Access vraća 403. Ako token procuri, dostupni su samo moduli `[Eth,Net,Web3,Subscribe,Health]`.
 - Credentials JSON tunela je tajna: `/opt/gnosis/secrets/cloudflared/<TUNNEL_ID>.json`, `_gnosis` 600. `cert.pem` iz `cloudflared tunnel login` vrijedi za cijelu zonu i treba samo za `tunnel create` i `route dns`; nakon postavljanja se briše.
 - Cloudflare vidi sav RPC promet ([ADR-005](#adr-005)).
-- `eth_getLogs` i receipts postoje samo za zadnjih 367 dana ([ADR-010](#adr-010)). Starija povijest EURe-a mora doći iz indexera.
+- `eth_getLogs` i receipts postoje samo za zadnjih 367 dana ([ADR-010](#adr-010)). Starija povijest EURe-a mora doći iz indexera ([ADR-014](#adr-014)).
 - Faza 2 (javni proxy Worker za novčanik, [docs/06](06-rpc-exposure.md)) postaje još jedan klijent istog tunela.
 - Log `cloudflared`-a (`logs/tunnel.stderr.log`) se ne rotira. Na razini `info` je mali; ako naraste, dodaje se newsyslog.
 
@@ -307,3 +307,30 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 - Ograničenja za klijente:
   - donja granica je granica pruninga, a ne `fromBlock: "earliest"`; ispod nje Nethermind vraća `Pruned history unavailable`;
   - najviše 20.000 logova po odgovoru.
+
+---
+
+## ADR-014: Trajna povijest EURe uplata živi u bazi Workera, ne na čvoru {#adr-014}
+
+**Status:** prihvaćeno 2026-10-23.
+
+**Kontekst:**
+
+- Čvor čuva blokove i receipts samo 367 dana ([ADR-010](#adr-010)). Uz log index ([ADR-013](#adr-013)) `eth_getLogs` za jednu adresu preko tog prozora traje 0,1–0,9 s. Starije od toga čvor nema.
+- Godina povijesti zauzima ~140 GB na i9 (2026-10-23): `blocks` 99G, `receipts` 37G, `logIndex` 3,2G. Slobodno je 211 GB, a `state` raste zasebno. Druga godina bi stala, ali disk bi ostao gotovo pun. Cijela povijest Gnosisa ne stane.
+- Spuštanje granice povijesti je reverzibilno samo na papiru. Nethermind bi stare blokove i receipts trebao dohvatiti od peerova, a peerovi ih sve češće ne čuvaju (EIP-4444). Na i9 to nije isprobano.
+- Popis uplata (`/api/activity` u `pay.domovina.ai`) treba povijest **naših** adresa, a ne proizvoljan `eth_getLogs` za bilo koju adresu.
+
+**Odluka:**
+
+- Čvor ostaje na pomičnom prozoru od 367 dana. Za veću povijest se ne proširuje.
+- Trajna arhiva EURe Transfera za naše adrese je baza Workera `pay.domovina.ai` (D1, cron indexer `onchainIndexer.ts`). Indexer redovito čita nove logove s čvora i sprema ih trajno, pa brisanje na čvoru ne gubi ništa.
+- Povijest stariju od prozora indexer učita **jednokratno** iz Blockscouta, Gnosisscana ili javnog arhivskog RPC-a, u istu bazu.
+- Blockscout ostaje rezerva za adrese koje ne pratimo unaprijed i za vrijeme dok čvor nije dostupan.
+
+**Posljedice:**
+
+- Prozor od 367 dana sada je i rezerva za indexer: indexer smije stajati do godinu dana bez gubitka podataka. Treba nadzor koji javlja ako stoji danima.
+- Nova adresa koju počnemo pratiti dobiva povijest prozora s čvora, a stariji dio jednokratno iz vanjskog izvora.
+- Proširenje povijesti na čvoru ponovno se razmatra samo ako zatreba proizvoljan `eth_getLogs` za tuđe adrese stariji od godine. Tada treba veći disk (2–4 TB SSD) i prvo isprobati dohvat stare povijesti s peerova.
+- Implementacija je u repou `pay.domovina.ai` (njegov ADR i PR), ovaj ADR samo određuje podjelu odgovornosti.
