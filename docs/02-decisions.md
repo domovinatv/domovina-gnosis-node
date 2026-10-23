@@ -276,7 +276,7 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 
 ## ADR-013: Log index u Nethermindu za široke `eth_getLogs` upite {#adr-013}
 
-**Status:** predloženo 2026-10-23, čeka mjerenje na i9 ([predaja](2026-10-23-predaja-log-index-i9.md)).
+**Status:** prihvaćeno 2026-10-23 nakon mjerenja na i9 ([predaja](2026-10-23-predaja-log-index-i9.md)). Mjerenje kroz tunel s Mac Minija je još otvoreno.
 
 **Kontekst** (izmjereno 2026-10-23 s Mac Minija kroz `acutis-rpc.mpt.hr`):
 
@@ -286,7 +286,7 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 - Brzina bez indexa: 10.000 blokova 0,74 s, a batch od 50 × 10.000 blokova 11,5 s. Cijela godina (~6,3M blokova) trajala bi oko 145 s, što je prespor za čitanje po zahtjevu.
 - Nethermind 2.x ima `LogIndex.Enabled` (zadano `false`). Index je zasebna baza `logIndex` koja se gradi iz receiptsa na disku. Napredak i veličinu pokazuje RPC `logIndex_status` (modul `LogIndex`). Na čvoru s indexom limit od 10.000 vrijedi samo za blokove koje index još ne pokriva (release notes 2.1.0, #13131).
 
-**Odluka (prijedlog).**
+**Odluka.**
 
 - `NM_LOG_INDEX=true` u `config/node.env` na i9. `30-services.sh` tada dodaje `--LogIndex.Enabled true` i modul `LogIndex` (samo za čitanje: `logIndex_status`, `logIndex_blockNumbers`).
 - Prihvaća se ako backfill završi, ako baza indexa nije veća od ~30 GB i ako upit preko cijelog prozora za jednu adresu traje ispod ~2 s. Inače se `NM_LOG_INDEX=false` vraća, baza `logIndex` briše, a popis uplata ide kroz indexer u Workeru (D1).
@@ -297,3 +297,13 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 - Značajka je nova u 2.x i prima popravke (#13036, #13565). Pri upgradeu Netherminda treba pročitati odjeljak release notesa o log indexu.
 - Modul `LogIndex` je dostupan i kroz tunel, iza Accessa. Samo čita.
 - Uz pomični prozor povijesti index treba pratiti brisanje starih receiptsa. To se provjerava u `logIndex_status` (`current.fromBlock` raste s prozorom).
+
+**Mjerenje 2026-10-23 (i9, lokalno).**
+
+- Backfill 6,35M blokova trajao je ~55 min (10:17–11:12) uz ~2,7 jezgre CPU-a. Za to vrijeme head je ostao 1–5 s star.
+- Baza `logIndex` ima 3,2 GB, a slobodni disk je pao s 213 na 211 GB.
+- `eth_getLogs` za jednu adresu preko cijelog prozora traje 0,1–0,9 s (105 logova), a prije je trajao ~145 s.
+- Kriteriji su ispunjeni s velikom rezervom: < 30 GB i < 2 s.
+- Ograničenja za klijente:
+  - donja granica je granica pruninga, a ne `fromBlock: "earliest"`; ispod nje Nethermind vraća `Pruned history unavailable`;
+  - najviše 20.000 logova po odgovoru.

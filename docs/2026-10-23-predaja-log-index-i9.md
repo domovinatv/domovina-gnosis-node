@@ -2,6 +2,8 @@
 
 Cilj: izmjeriti može li `acutis` posluživati `eth_getLogs` preko cijelog prozora povijesti (367 dana) u jednom upitu. O tome ovisi hoće li popis EURe uplata u `pay.domovina.ai` (`/api/activity`) čitati naš čvor umjesto Blockscouta. Odluka i kriteriji prihvaćanja su u [ADR-013](02-decisions.md#adr-013).
 
+**Ishod (2026-10-23):** backfill gotov za ~55 min, index 3,2 GB, upit preko cijelog prozora 0,1–0,9 s lokalno. Kriteriji iz ADR-013 su ispunjeni lokalno, kroz tunel još treba izmjeriti s Mac Minija. Detalji su u tablici u koraku 4.
+
 ## Stanje u trenutku predaje
 
 - `pay.domovina.ai` PR [#143](https://github.com/domovinatv/pay.domovina.ai/pull/143) (ADR 0031 tog repoa): sva čitanja na serveru idu prvo na `acutis-rpc.mpt.hr`, a javni RPC je rezerva. Secreti `CF_ACCESS_CLIENT_ID`/`CF_ACCESS_CLIENT_SECRET` su postavljeni na Worker `pay-domovina-backend`. Postaju aktivni s deployem nakon mergea.
@@ -63,16 +65,25 @@ Za usporedbu, bez indexa je 500.000 blokova za istu adresu trajalo 11,5 s i dalo
 
 Rezultati za upis u [dnevnik](05-operations.md#dnevnik) i u ADR-013:
 
-| Mjera | Vrijednost |
+| Mjera | Vrijednost (2026-10-23) |
 | --- | --- |
-| početak backfilla (vrijeme restarta) | |
-| kraj backfilla | |
-| veličina `logIndex` (`dbSize`) | |
-| slobodno prije / poslije | |
-| CPU Netherminda tijekom backfilla (`top -l 1 -pid …`) | |
-| `eth_getLogs` cijeli prozor, lokalno | |
-| isto kroz tunel | |
-| `current.fromBlock` nakon 24 h (prati li pomični prozor?) | |
+| početak backfilla (vrijeme restarta) | restart 10:12:27, baza otvorena i backfill krenuo 10:17:36 (pivot #48.898.093, 6.348.093 blokova unatrag) |
+| kraj backfilla | ~11:12 (≈ 55 min, ~1.000–2.000 blk/s). Stao je na 99,89 % jer je pruner već obrisao 7.056 blokova iznad `NM_HISTORY_FROM_BLOCK`, vidi niže |
+| veličina `logIndex` (`dbSize`) | 3,2 GB (`du`: 3,1 G) |
+| slobodno prije / poslije | 213 GB / 211 GB |
+| CPU Netherminda tijekom backfilla | ~266 % (2,7 jezgre); nakon backfilla 20–55 % |
+| `eth_getLogs` cijeli prozor, lokalno | dolazni EURe na Safe: 105 logova, 0,88 s hladno, 0,10–0,20 s toplo; odlazni 105 logova 0,19 s; svi tokeni prema Safeu 0,10 s; batch 105 × `eth_getBlockByNumber(false)` 0,04 s |
+| isto kroz tunel | čeka Mac Mini |
+| `current.fromBlock` nakon 24 h (prati li pomični prozor?) | otvoreno; u 13:00 `current.fromBlock` = 42.557.056, ispod stvarne granice pruninga (42.558.336) |
+
+Baze prije uključivanja (10:12): `state` 148G, `blocks` 99G, `receipts` 37G, `headers` 16G, ukupno 307G.
+
+### Što je mjerenje pokazalo, a predaja nije predvidjela
+
+- **`target.fromBlock` nikad neće biti dosegnut.** Cilj je `NM_HISTORY_FROM_BLOCK` (42.550.000), a pruner je u međuvremenu obrisao sve ispod `head − 198.180 × 32`. Backfill je gotov kad `Log index sync (Backward)` u logu stoji, a `current.fromBlock` je ispod granice pruninga.
+- **Donja granica upita je granica pruninga, ne `current.fromBlock`.** `fromBlock` ispod najstarijeg receipta vraća `Pruned history unavailable`. U 13:00 najniži prihvaćeni `fromBlock` bio je `head − 6.341.958`, a formula `head − 6.341.760`. Razlika postoji jer pruner radi svakih 20–40 min. Klijent neka koristi `head − 6.330.000` (~16 h rezerve) i na tu grešku ponovi s višim `fromBlock`.
+- **`fromBlock: "earliest"` ne radi.** Raspon ispod indexa ide starim putem i pada na limitu 10.000 blokova („reads 42557121 blocks without the log index”).
+- **Najviše 20.000 logova po odgovoru** (`-32005 Too many logs requested`). Za jednu adresu je to daleko. Svi EURe Transferi rade se u komadima: 20.000 blokova dalo je 19.034 loga.
 
 ## 5. Povratak (ako ne prođe)
 
@@ -84,7 +95,8 @@ Mapu koju `find` pokaže obriši tek kad je Nethermind ponovno gore i sinkronizi
 
 ## 6. Nakon prihvaćanja (Mac Mini, `pay.domovina.ai`)
 
-- `/api/activity` čita popis s `eth_getLogs` preko cijelog prozora, a vremena dobiva jednim batchom `eth_getBlockByNumber` (`false`, bez transakcija). Blockscout ostaje rezerva za grešku čvora i za adrese starije od 367 dana.
+- Prvo izmjeri upit iz koraka 4 kroz tunel i upiši rezultat u tablicu. `fromBlock` neka bude `head − 6.330.000`, a ne vrijednost iz predaje (`head − 6.300.000` je također u redu).
+- `/api/activity` čita popis s `eth_getLogs` preko cijelog prozora (`fromBlock = head − 6.330.000`; na `Pruned history unavailable` ponovi s višim `fromBlock`; ne koristi `earliest`; najviše 20.000 logova po odgovoru), a vremena dobiva jednim batchom `eth_getBlockByNumber` (`false`, bez transakcija). Blockscout ostaje rezerva za grešku čvora i za adrese starije od 367 dana.
 - Cron indexer (`onchainIndexer.ts`, sada `CHUNK = 5_000`) može ići u većim komadima kad čita s čvora.
 - ADR-013 iz „predloženo” prelazi u „prihvaćeno”, s izmjerenim brojkama.
 
