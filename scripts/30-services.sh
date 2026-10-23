@@ -125,6 +125,13 @@ render_service() {
         nm_extra+=(--History.Pruning Rolling
                    --History.RetentionEpochs "$NM_HISTORY_RETENTION_EPOCHS")
       fi
+      # Log index (ADR-013): wide eth_getLogs ranges without the 10,000-block
+      # Receipt.MaxBlockDepth cap, plus logIndex_status to watch the backfill.
+      local nm_modules="Eth,Net,Web3,Subscribe,Health"
+      if [[ "${NM_LOG_INDEX:-false}" == true ]]; then
+        nm_extra+=(--LogIndex.Enabled true)
+        nm_modules="$nm_modules,LogIndex"
+      fi
       # Nethermind is a .NET single-file bundle that extracts native libraries
       # on start. The service user's home is /var/empty (read-only), so give it
       # a writable home and extraction dir, or it exits with code 159.
@@ -142,7 +149,7 @@ render_service() {
         --JsonRpc.Port "$EL_HTTP_PORT" \
         --Init.WebSocketsEnabled true \
         --JsonRpc.WebSocketsPort "$EL_WS_PORT" \
-        --JsonRpc.EnabledModules "[Eth,Net,Web3,Subscribe,Health]" \
+        --JsonRpc.EnabledModules "[$nm_modules]" \
         --JsonRpc.EngineHost 127.0.0.1 \
         --JsonRpc.EnginePort "$EL_ENGINE_PORT" \
         --JsonRpc.JwtSecretFile "$JWT_FILE" \

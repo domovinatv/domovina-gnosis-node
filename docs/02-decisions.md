@@ -271,3 +271,29 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 - Selidba čvora mijenja hostnameove, pa Workere treba prebaciti ([docs/11 § Selidba](11-imena-cvorova.md#selidba)). Tunel (UUID) i credentials ostaju isti.
 - Šest županija ima samo jedno ime u katalogu, a Osječko-baranjska i Međimurska nemaju sveca s osobnom vezom. Za njih se katalog dopunjava kad se zna mjesto čvora.
 - `stepinac` ostaje plan za sljedeći čvor u Zagrebačkoj županiji, iako i9 stoji tamo pod imenom `acutis`.
+
+---
+
+## ADR-013: Log index u Nethermindu za široke `eth_getLogs` upite {#adr-013}
+
+**Status:** predloženo 2026-10-23, čeka mjerenje na i9 ([predaja](2026-10-23-predaja-log-index-i9.md)).
+
+**Kontekst** (izmjereno 2026-10-23 s Mac Minija kroz `acutis-rpc.mpt.hr`):
+
+- Prvi Worker na tunelu je MPT rail (`pay.domovina.ai`, PR #143, ADR 0031 tog repoa). Sva čitanja na serveru idu prvo na čvor, a javni RPC je rezerva.
+- Popis dolaznih EURe uplata po adresi (`/api/activity`) treba sve Transfer logove prema toj adresi kroz cijelu povijest koju čuvamo (367 dana, [ADR-010](#adr-010)). Danas ga daje Blockscout.
+- Nethermind 2.1.0 bez log indexa odbija `eth_getLogs` preko više od 10.000 blokova (`Receipt.MaxBlockDepth`): „Logs request reads 6300001 blocks without the log index”.
+- Brzina bez indexa: 10.000 blokova 0,74 s, a batch od 50 × 10.000 blokova 11,5 s. Cijela godina (~6,3M blokova) trajala bi oko 145 s, što je prespor za čitanje po zahtjevu.
+- Nethermind 2.x ima `LogIndex.Enabled` (zadano `false`). Index je zasebna baza `logIndex` koja se gradi iz receiptsa na disku. Napredak i veličinu pokazuje RPC `logIndex_status` (modul `LogIndex`). Na čvoru s indexom limit od 10.000 vrijedi samo za blokove koje index još ne pokriva (release notes 2.1.0, #13131).
+
+**Odluka (prijedlog).**
+
+- `NM_LOG_INDEX=true` u `config/node.env` na i9. `30-services.sh` tada dodaje `--LogIndex.Enabled true` i modul `LogIndex` (samo za čitanje: `logIndex_status`, `logIndex_blockNumbers`).
+- Prihvaća se ako backfill završi, ako baza indexa nije veća od ~30 GB i ako upit preko cijelog prozora za jednu adresu traje ispod ~2 s. Inače se `NM_LOG_INDEX=false` vraća, baza `logIndex` briše, a popis uplata ide kroz indexer u Workeru (D1).
+
+**Posljedice.**
+
+- Dodatni disk za bazu `logIndex` (nepoznat do mjerenja) i CPU/IO dok traje backfill.
+- Značajka je nova u 2.x i prima popravke (#13036, #13565). Pri upgradeu Netherminda treba pročitati odjeljak release notesa o log indexu.
+- Modul `LogIndex` je dostupan i kroz tunel, iza Accessa. Samo čita.
+- Uz pomični prozor povijesti index treba pratiti brisanje starih receiptsa. To se provjerava u `logIndex_status` (`current.fromBlock` raste s prozorom).

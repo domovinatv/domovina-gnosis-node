@@ -135,6 +135,8 @@ WebSocket (`acutis-ws.mpt.hr`): npr. `npx wscat -c wss://acutis-ws.mpt.hr -H "CF
 
 ## 5. Mac Mini: Worker koji čita RPC
 
+> **Izvedeno 2026-10-23:** `pay.domovina.ai` PR [#143](https://github.com/domovinatv/pay.domovina.ai/pull/143), secreti postavljeni. Popis uplata preko `eth_getLogs` čeka log index ([predaja](2026-10-23-predaja-log-index-i9.md)).
+
 U repou Workera (ne u ovom):
 
 ```bash
