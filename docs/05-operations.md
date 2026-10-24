@@ -72,6 +72,27 @@ scripts/gnosisctl status && scripts/gnosisctl health
 
 Zašto prvo `stop all`: launchd pri gašenju sustava ne mora poštovati `ExitTimeOut` od 180 s, a Nethermind treba vremena za flush baze.
 
+### Restart dok si spojen preko RustDeska {#restart-rustdesk}
+
+Prije restarta treba provjeriti da će se Mac sam vratiti do stanja u kojem se RustDesk može spojiti. Provjereno na `acutis` 2026-10-25:
+
+| Provjera | Naredba | Očekivano |
+|---|---|---|
+| FileVault | `fdesetup status` | `Off`. Inače Mac stane na pre-boot unlock i RustDesk se ne pokrene. Tada samo `sudo fdesetup authrestart`. |
+| Auto-login | `defaults read /Library/Preferences/com.apple.loginwindow autoLoginUser`, `ls /etc/kcpassword` | `ms`, fajl postoji |
+| RustDesk servisi | `plutil -p /Library/LaunchDaemons/com.carriez.RustDesk_service.plist`, `plutil -p /Library/LaunchAgents/com.carriez.RustDesk_server.plist` | `RunAtLoad`. Agent ima `LimitLoadToSessionType` = `LoginWindow` + `Aqua`, pa radi i na login ekranu ako auto-login zakaže, npr. nakon promjene lozinke. |
+| RustDesk lozinka | `grep verification-method ~/Library/Preferences/com.carriez.RustDesk/RustDesk2.toml` | `use-permanent-password` |
+| TCC dozvole | `sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" "select service,auth_value from access where client like '%rustdesk%'"` | ScreenCapture i Accessibility = `2` |
+| Rendezvous server | `nc -z -G 3 89.201.137.9 21116` i `21117` | dostupan; server nije na i9 |
+| Wi-Fi prije prijave | `security find-generic-password -D "AirPort network password" -l <SSID> /Library/Keychains/System.keychain` | mreža je u **System** keychainu |
+| Napajanje i poklopac | `pmset -g batt`, `ioreg -r -k AppleClamshellState -d 4` | AC, `AppleClamshellState = No` |
+| Auto-update | `defaults read /Library/Preferences/com.apple.SoftwareUpdate` | `AutomaticallyInstallMacOSUpdates = 0`, pa restart ne instalira update usput |
+| Servisi čvora | `launchctl print-disabled system \| grep gnosis` | `enabled`. `stop all` radi `bootout`, a ne `disable`, pa se servisi pri bootu sami pokreću. |
+
+Ne čitaj `RustDesk.toml` s `sed` filterom po retku: `key_pair` je višeredni niz i procuri.
+
+Boot, prijava i pokretanje RustDeska na i9 trebaju oko 1–3 minute. Komandu pokreni u jednom retku, zajedno s lozinkom za sudo: `scripts/gnosisctl stop all && sudo shutdown -r now`.
+
 ## Backup
 
 | Što | Backup? | Kako |
@@ -163,3 +184,4 @@ Ovdje kronološki upisivati događaje na čvoru: instalaciju, upgradeove, ispade
 | 2026-10-23 | 09:00–09:40: **prvi Worker na tunelu** (Mac Mini). `pay.domovina.ai` PR [#143](https://github.com/domovinatv/pay.domovina.ai/pull/143): sva čitanja na serveru idu prvo na `acutis-rpc.mpt.hr` (token `eure-reader`), a javni RPC je rezerva. Secreti su postavljeni na Worker `pay-domovina-backend` i postaju aktivni s deployem. Mjerenje kroz tunel: batch JSON-RPC radi; `eth_getLogs` je bez log indexa ograničen na 10.000 blokova (0,74 s po rasponu, 50 raspona u batchu 11,5 s, godina ≈ 145 s). Prijedlog: log index ([ADR-013](02-decisions.md#adr-013), [predaja za i9](2026-10-23-predaja-log-index-i9.md)). |
 | 2026-10-23 | 10:12–13:05: **log index uključen na i9** ([ADR-013](02-decisions.md#adr-013), [predaja](2026-10-23-predaja-log-index-i9.md)). `NM_LOG_INDEX=true`, Nethermind restart u 10:12:27, a baza je otvorena u 10:17. Backfill 6,35M blokova trajao je ~55 min (do ~11:12, CPU ~2,7 jezgre, head stalno 1–5 s star). Baza `logIndex` ima 3,2 GB, a slobodno je 213 → 211 GB. `eth_getLogs` za dolazne EURe na MPT Safe preko cijelog prozora vraća 105 logova u 0,88 s hladno, odnosno 0,1–0,2 s toplo (prije ~145 s). Ograničenja: `fromBlock` mora biti iznad granice pruninga (inače `Pruned history unavailable`), `earliest` ne radi, a odgovor ima najviše 20.000 logova. `target.fromBlock` ostaje na `NM_HISTORY_FROM_BLOCK` i nikad se ne dosegne (99,89 %), što je bezopasno. |
 | 2026-10-24 | 01:18–03:15: noćna provjera (~15 h od uključivanja log indexa): Nethermind (PID 51731, ~8 % CPU, 3,55 GiB RAM, 0 WARN/ERROR), Teku (PID 69532, 36,5 h uptime, 80 peerova), tunel `acutis` (PID 61787, 27 h uptime), slobodno 210 GB, `logIndex` `dbSize` stoji na 3,2 GB (`fromBlock` `0x2895e80`). Nadopunjen validator (`40-validator.sh verify` i `status`, SHA-256 checksumi u `versions.env`, [docs/08](08-validator.md)). U `listener.mjs` dodano preskakanje duplikata sa starog Monerium EURe v1 ugovora (`0xcB444e…` u 100 % slučajeva emitira i kanonski v2 `0x420CA0…` `Transfer` u istoj transakciji — 619/619 u zadnjih 1.000 blokova), `TOKEN_ALLOWLIST` i tip-reorg detekcija za `CONFIRMATIONS=0`, uz cjelovitu specifikaciju D1 + FCM HTTP v1 u [docs/07](07-wallet-notifications.md). |
+| 2026-10-25 | 00:28–00:42: provjera prije restarta preko RustDeska ([checklista](#restart-rustdesk)). Uptime 14 d 10 h. FileVault off, auto-login `ms` (UID 502, ne `stepanic`), RustDesk servis i agent na `RunAtLoad`, trajna lozinka, TCC dozvole odobrene, rendezvous `89.201.137.9` dostupan, Wi-Fi u System keychainu, AC, poklopac otvoren. Čeka macOS 26.7.1, ali je auto-install isključen. Prije restarta: nethermind (PID 51731), teku (PID 69532) i tunnel (PID 61787) rade. Restart `stop all && shutdown -r` je sljedeći korak. |
