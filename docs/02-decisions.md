@@ -152,8 +152,9 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 
 **Posljedice.**
 
-- Notifikacija kasni 10–15 s, a ne „1 s” kako je bilo obećano.
-- xDAI koji šalje ugovor (internal transfer) se ne vidi bez `trace_*` metoda. Vidi [docs/07](07-wallet-notifications.md#ograničenja).
+- Notifikacija s default `CONFIRMATIONS=2` kasni 10–15 s, a s `CONFIRMATIONS=0` stiže unutar ~50–200 ms od uvoza bloka na čvoru (uz detekciju tip reorga preko `newHeads`).
+- xDAI koji šalje ugovor (internal transfer) se ne vidi bez `trace_*` metoda. Za ERC-20 tokene (poput EURe) to nije ograničenje jer svaki transfer emitira `Transfer` log. Vidi [docs/07](07-wallet-notifications.md#ograničenja).
+- **Dopuna 2026-10-24 (EURe v1/v2 deduplikacija i `TOKEN_ALLOWLIST`):** Na Gnosis Chainu stari Monerium EURe v1 ugovor (`0xcB444e90D8198415266c6a2724b7900fb12FC56E`) interno poziva kanonski EURe v2 ugovor (`0x420CA0f9B9b604cE0fd9C18EF134C705e5Fa3430`), pa oba ugovora u istoj transakciji emitiraju identičan `Transfer` log sa simbolom `EURe` (potvrđeno na 1.000 blokova na `i9`: 619 v1 transfera, svih 619 ima parnjak na v2). `listener.mjs` zato automatski preskače v1 adresu (`IGNORED_TOKENS`), a podržava i `TOKEN_ALLOWLIST` za filtriranje po adresama tokena ([docs/07 § 3](07-wallet-notifications.md#3-specifičnost-eure-na-gnosis-chainu-monerium-v1-vs-v2-zamka)).
 
 ---
 

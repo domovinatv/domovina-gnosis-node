@@ -40,6 +40,21 @@ const PID_FILE = env.PID_FILE || '';
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 const HASH_HISTORY = 64; // recent block hashes kept for reorg detection
 
+// Monerium EURe v1 (0xcB444e90D8198415266c6a2724b7900fb12FC56E) on Gnosis is a
+// legacy bridge/proxy contract that forwards every transfer to canonical EURe v2
+// (0x420CA0f9B9b604cE0fd9C18EF134C705e5Fa3430), causing BOTH contracts to emit
+// an identical Transfer(from, to, value) log in the same transaction. Ignore the
+// v1 duplicate so a single EURe payment never triggers two notifications.
+const IGNORED_TOKENS = new Set(['0xcb444e90d8198415266c6a2724b7900fb12fc56e']);
+
+// Optional comma-separated ERC-20 contract allowlist (empty = all tokens).
+const TOKEN_ALLOWLIST = new Set(
+  (env.TOKEN_ALLOWLIST || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean),
+);
+
 // With LOG_FILE set the listener owns its log file and reopens it on SIGHUP,
 // which is what newsyslog sends after rotating it (config in 10-host-setup.sh).
 let logStream = null;
@@ -231,6 +246,8 @@ async function eventsInBlock(block) {
     const to = '0x' + l.topics[2].slice(26).toLowerCase();
     if (!watch.has(to)) continue;
     const token = l.address.toLowerCase();
+    if (IGNORED_TOKENS.has(token)) continue;
+    if (TOKEN_ALLOWLIST.size > 0 && !TOKEN_ALLOWLIST.has(token)) continue;
     const raw = BigInt(l.data === '0x' ? 0 : l.data);
     const { symbol, decimals } = await tokenInfo(token);
     events.push({
@@ -312,7 +329,20 @@ function connectWs(delay = 1000) {
   });
   ws.addEventListener('message', (e) => {
     const msg = JSON.parse(e.data);
-    if (msg.method === 'eth_subscription') tick();
+    if (msg.method === 'eth_subscription') {
+      const hdr = msg.params?.result;
+      if (hdr?.number && hdr?.hash && state.lastBlock != null) {
+        const num = Number(BigInt(hdr.number));
+        // If CONFIRMATIONS=0 and a same-height tip reorg replaces block `num`,
+        // rewind one block so tick() re-processes the replacement head immediately.
+        if (num <= state.lastBlock && state.hashes[num] && state.hashes[num] !== hdr.hash) {
+          warn(`tip reorg at block ${num}: ${hdr.hash} != stored ${state.hashes[num]}; rewinding`);
+          delete state.hashes[num];
+          state.lastBlock = num - 1;
+        }
+      }
+      tick();
+    }
   });
   ws.addEventListener('close', () => {
     warn(`ws closed; reconnecting in ${delay / 1000}s (polling continues)`);
