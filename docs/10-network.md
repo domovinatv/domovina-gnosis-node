@@ -48,6 +48,8 @@ Adrese su zaključane DHCP rezervacijama:
 
 Ako macOS promijeni privatnu MAC adresu (postavka „Rotating” umjesto „Fixed”), i9 dobiva drugu adresu i forward prestaje raditi. Provjera: `ifconfig en0 | grep ether` mora odgovarati rezervaciji na TP-Linku.
 
+To se dogodilo 2026-10-25: postavka je bila **Rotating**, pa je i9 nakon restarta (uptime 14 d) dobio novu MAC i adresu .101, a Teku je ostao bez dolaznih peerova. Sada je postavka **Fixed** (System Settings → Wi-Fi → Details → Private Wi-Fi address) i rezervacija je prepravljena ([Dnevnik](05-operations.md#dnevnik)). Promjena te postavke može dati novu MAC i ponovno spojiti Wi-Fi, pa je sigurnije raditi je uz Mac, ne preko RustDeska (prebacivanje Rotating → Fixed 2026-10-25 zadržalo je postojeću MAC). U plistu `/Library/Preferences/com.apple.wifi.known-networks.plist` način rada nije zapisan kao zaseban ključ, pa ga se ne može pročitati iz terminala; gleda se u System Settings.
+
 ## Screenshotovi konfiguracije (2026-10-22)
 
 Snimljeno nakon postavljanja, u admin sučeljima oba routera. MAC adrese i serijski broj su zacrnjeni. Kod promjene na routeru treba snimiti nove slike i zamijeniti ove.
