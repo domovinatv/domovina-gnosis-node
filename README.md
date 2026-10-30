@@ -14,10 +14,10 @@ Ovaj repo je **single source of truth**: odluke, verzije, skripte i runbookovi s
 
 | Dio | Status |
 | --- | --- |
-| Čvor na i9 (Nethermind + Teku, verzije u `config/versions.env`) | **radi od 2026-10-11**: sinkroniziran (stanje + zadnjih 367 dana povijesti), [dnevnik prve instalacije](docs/2026-10-10-prvo-pokretanje-i9-disk.md) |
-| launchd servisi, `gnosisctl` | spremno |
+| Čvor na i9 (Nethermind + Teku, verzije u `config/versions.env`) | **radi neprekidno od 2026-10-11**: sinkroniziran (stanje + 367 dana povijesti + log index), [izvještaj o stabilnosti i radu (10.–30. 10.)](docs/2026-10-30-izvjestaj-o-stabilnosti-i-radu-cvora.md) |
+| launchd servisi, `gnosisctl` | aktivno, automatski nadzor |
 | Payment listener | spremno, testirano protiv javnog Gnosis RPC-a |
-| RPC prema van (Cloudflare Tunnel + Worker) | [plan](docs/2026-10-11-plan-port-forward-i-tunel.md) i dizajn u [docs/06](docs/06-rpc-exposure.md); čeka razdoblje promatranja |
+| RPC prema van (Cloudflare Tunnel + Worker) | tunel `acutis` aktivan od 2026-10-22 iza Cloudflare Accessa ([ADR-011](docs/02-decisions.md#adr-011)) |
 | Validator | procedura u [docs/08](docs/08-validator.md); ključevi nisu generirani |
 
 ## Brzi početak (na i9 MacBooku)
@@ -101,7 +101,7 @@ docs/research/             sirovi istraživački nalazi s izvorima (2026-10-01)
 10. [Mreža i port forwarding](docs/10-network.md): topologija ureda (Zyxel → TP-Link → i9), pravila na routerima, zamke
 11. [Imena čvorova](docs/11-imena-cvorova.md): shema hostnamea `<ime>-rpc.mpt.hr`, katalog svetaca po županijama (plan za 21+ čvor)
 
-Dnevnik rada: [2026-10-01 — prepisivanje, zamke, otvorene stavke za i9](docs/2026-10-01-prepisivanje-i-otvorene-stavke.md), [2026-10-10 — prva instalacija na i9: disk, sync, CPU](docs/2026-10-10-prvo-pokretanje-i9-disk.md), [2026-10-22 — review analiza koda, Git povijesti i stanja čvora (Gemini 4 Argon)](docs/2026-10-22-review-analiza.md). Poznati problemi: [docs/05](docs/05-operations.md#poznati-problemi). Sljedeće: [plan port forwarda i Cloudflare tunela](docs/2026-10-11-plan-port-forward-i-tunel.md).
+Dnevnik rada: [2026-10-01 — prepisivanje, zamke, otvorene stavke za i9](docs/2026-10-01-prepisivanje-i-otvorene-stavke.md), [2026-10-10 — prva instalacija na i9: disk, sync, CPU](docs/2026-10-10-prvo-pokretanje-i9-disk.md), [2026-10-22 — review analiza koda, Git povijesti i stanja čvora](docs/2026-10-22-review-analiza.md), [2026-10-30 — cjeloviti izvještaj o stabilnosti i radu čvora](docs/2026-10-30-izvjestaj-o-stabilnosti-i-radu-cvora.md). Poznati problemi: [docs/05](docs/05-operations.md#poznati-problemi). Sljedeće: [plan port forwarda i Cloudflare tunela](docs/2026-10-11-plan-port-forward-i-tunel.md).
 
 ## Pravila
 
