@@ -100,6 +100,7 @@ docs/research/             sirovi istraživački nalazi s izvorima (2026-10-01)
 9. [Sigurnost i model prijetnji](docs/09-security.md)
 10. [Mreža i port forwarding](docs/10-network.md): topologija ureda (Zyxel → TP-Link → i9), pravila na routerima, zamke
 11. [Imena čvorova](docs/11-imena-cvorova.md): shema hostnamea `<ime>-rpc.mpt.hr`, katalog svetaca po županijama (plan za 21+ čvor)
+12. [DOMOVINA lanac](docs/12-domovina-chain.md): prijedlog vlastitog L1 po uzoru na Gnosis, native xEUR pokriven EURe-om ([ADR-015](docs/02-decisions.md#adr-015), predloženo)
 
 Dnevnik rada: [2026-10-01 — prepisivanje, zamke, otvorene stavke za i9](docs/2026-10-01-prepisivanje-i-otvorene-stavke.md), [2026-10-10 — prva instalacija na i9: disk, sync, CPU](docs/2026-10-10-prvo-pokretanje-i9-disk.md), [2026-10-22 — review analiza koda, Git povijesti i stanja čvora](docs/2026-10-22-review-analiza.md), [2026-10-30 — cjeloviti izvještaj o stabilnosti i radu čvora](docs/2026-10-30-izvjestaj-o-stabilnosti-i-radu-cvora.md). Poznati problemi: [docs/05](docs/05-operations.md#poznati-problemi). Sljedeće: [plan port forwarda i Cloudflare tunela](docs/2026-10-11-plan-port-forward-i-tunel.md).
 

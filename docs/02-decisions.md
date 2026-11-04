@@ -335,3 +335,46 @@ Nethermind + Lighthouse su većinska kombinacija na Gnosisu. Manjinski klijent j
 - Nova adresa koju počnemo pratiti dobiva povijest prozora s čvora, a stariji dio jednokratno iz vanjskog izvora.
 - Proširenje povijesti na čvoru ponovno se razmatra samo ako zatreba proizvoljan `eth_getLogs` za tuđe adrese stariji od godine. Tada treba veći disk (2–4 TB SSD) i prvo isprobati dohvat stare povijesti s peerova.
 - Implementacija je u repou `pay.domovina.ai` (njegov ADR i PR), ovaj ADR samo određuje podjelu odgovornosti.
+
+---
+
+## ADR-015: DOMOVINA lanac kao Gnosis klon s native xEUR-om preko `erc20_to_native` bridgea {#adr-015}
+
+**Status:** predloženo 2026-11-04. Plan je u [docs/12](12-domovina-chain.md), a nalazi s izvorima u [istraživanju](research/2026-11-04-domovina-chain.md).
+
+**Kontekst.**
+
+- Vizija od prvog dana je vlastiti EVM lanac koji je tehnički isti kao Gnosis i ažurira se istim verzijama klijenata, ali kreće od nule. Native token treba biti u eurima, jer se sve knjiži u eurima.
+- Na Gnosisu je gas token xDAI (USD). EURe je ERC-20 koji izdaje Monerium, pa se njime ne može platiti gas.
+- xDAI nastaje bridgeom `erc20_to_native`:
+  - USDS se zaključa na Ethereumu i validatori bridgea (4/7) to potvrde;
+  - Home bridge upiše primatelja u Block Reward ugovor (`blockRewardContractAddress` u chainspecu);
+  - klijent u sljedećem bloku dopiše native saldo.
+- Kod bridgea je open source (GPL-3.0, `gnosischain/tokenbridge-contracts` i `gnosischain/tokenbridge`) i održava se. Generički `ForeignBridgeErcToNative` prima bilo koji ERC-20. `XDaiForeignBridge` je njegova verzija s tvrdo zakucanim DAI-jem i kamatnom logikom.
+- Gnosis base fee ne spaljuje nego ga šalje na `eip1559FeeCollector`.
+- Ovaj repo već vrti Nethermind + Teku s `gnosis` presetom na `acutis`.
+
+**Odluka** (predložena):
+
+- DOMOVINA je **L1** s vlastitim genesisom, chain ID-om, deposit ugovorom i bootnodeovima. Koristi iste binarije i `gnosis` preset kao Gnosis, PoS je od bloka 0, a klijenti se ne forkaju.
+- Konfiguracija lanca se objavljuje u zasebnom repou iste strukture kao `gnosischain/configs`. Ovaj repo dobiva izbor mreže.
+- Native token je **xEUR**, a ne „EURe”:
+  - nastaje bridgeom `erc20_to_native`: na Gnosisu generički `ForeignBridgeErcToNative` s EURe v2 kao pokrićem, a na DOMOVINA lancu `HomeBridgeErcToNative` + `BlockRewardBridge`;
+  - oracle, monitor i ALM su iz `gnosischain/tokenbridge`.
+- Ako devnet pokaže da kovanje kroz Block Reward ne radi na lancu koji je PoS od nule, Home ugovor isplaćuje iz zalihe u genesisu (Vault, [docs/12 § 2.4](12-domovina-chain.md#24-rezervni-model-zaliha-u-genesisu-vault)).
+- Base fee ide na `eip1559FeeCollector`. Invarijanta je: xEUR zaliha == EURe na Foreign bridgeu.
+- Staking je u zasebnom tokenu (radno ime DOM), a ne u xEUR-u.
+- Svaki Gnosis upgrade klijenata ide redom devnet → testnet → DOMOVINA mainnet, nakon što se fork na Gnosis mainnetu pokaže stabilnim.
+- Odbačeno je L2 nad Gnosisom (OP Stack s EURe-om kao gas tokenom). Sigurnije je, ali nije isto što i Gnosis, drugačije se ažurira i manje je suvereno.
+
+**Posljedice.**
+
+- Bridge postaje najveći rizik: drži cijelo pokriće. Zato treba:
+  - N-od-M potpisnika kod različitih operatera;
+  - Safe multisig kao owner upgradeable proxyja (ugovori su Solidity 0.4.24);
+  - dnevne limite i cap;
+  - monitor invarijante;
+  - neovisni audit prije mainneta.
+- Sigurnost lanca ovisi o broju i neovisnosti operatera. Jedan čvor je dovoljan samo za devnet. Mainnet traži operatere po županijama ([ADR-012](#adr-012)).
+- Monerium kao izdavatelj EURe-a može imati ovlasti nad adresom bridgea. Prije mainneta treba dogovor s Moneriumom i pravna provjera (MiCA, HNB, HANFA).
+- Prihvaćanje ovog ADR-a čeka na otvorena pitanja iz [docs/12 § 8](12-domovina-chain.md#otvorena-pitanja), prije svega na test kovanja na devnetu.
